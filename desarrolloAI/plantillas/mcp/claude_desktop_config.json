@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "tareas": {
+      "command": "uv",
+      "args": ["run", "--directory", "C:\\ruta\\al\\proyecto\\mcp", "server.py"]
+    }
+  }
+}

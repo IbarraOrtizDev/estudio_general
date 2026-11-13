@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "tareas": {
+      "command": "uv",
+      "args": ["run", "--directory", "./mcp", "server.py"],
+      "env": { "TAREAS_ARCHIVO": "${TAREAS_ARCHIVO:-tareas.json}" }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--isolated"]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": { "Authorization": "Bearer ${GITHUB_TOKEN}" }
+    }
+  }
+}

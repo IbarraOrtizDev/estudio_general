@@ -1,0 +1,50 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // Modelo por defecto (proveedor/modelo[#variante])
+  "model": "anthropic/claude-sonnet-5-5",
+
+  // AGENTS.md se descubre automáticamente; añade otros archivos si hace falta
+  "instructions": ["CONTRIBUTING.md"],
+
+  // Permisos V2: lista ordenada, gana la ÚLTIMA regla que coincide
+  "permissions": [
+    { "action": "shell", "resource": "*", "effect": "ask" },
+    { "action": "shell", "resource": "git status *", "effect": "allow" },
+    { "action": "shell", "resource": "git diff *", "effect": "allow" },
+    { "action": "shell", "resource": "git log *", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm test *", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm lint *", "effect": "allow" },
+    { "action": "shell", "resource": "dotnet test *", "effect": "allow" },
+    { "action": "shell", "resource": "uv run pytest *", "effect": "allow" },
+    { "action": "shell", "resource": "npx playwright test *", "effect": "allow" },
+    { "action": "shell", "resource": "git push *", "effect": "deny" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "deny" },
+    { "action": "read", "resource": "*.env*", "effect": "deny" },
+    { "action": "read", "resource": "secrets/*", "effect": "deny" },
+    { "action": "webfetch", "resource": "*", "effect": "ask" }
+  ],
+
+  // Servidores MCP (V2: dentro de "servers")
+  "mcp": {
+    "servers": {
+      "tareas": {
+        "type": "local",
+        "command": ["uv", "run", "--directory", "./mcp", "server.py"],
+        "environment": { "TAREAS_ARCHIVO": "{env:TAREAS_ARCHIVO}" }
+      },
+      "playwright": {
+        "type": "local",
+        "command": ["npx", "-y", "@playwright/mcp@latest", "--isolated"]
+      },
+      "context7": {
+        "type": "remote",
+        "url": "https://mcp.context7.com/mcp",
+        "oauth": false,
+        "headers": { "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}" }
+      }
+    }
+  },
+
+  "share": "manual"
+}
