@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3.2 Logging estructurado en .NET — mejorar.dev (.NET &amp; Cloud Architecture)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <style>
+    :root {
+      --sidebar-width: 310px;
+      --navbar-height: 58px;
+      --brand-primary: #6366f1;
+      --brand-dark: #0f172a;
+      --bg-soft: #f8fafc;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-soft);
+      color: #1e293b;
+      padding-top: var(--navbar-height);
+      line-height: 1.65;
+    }
+
+    .doc-navbar {
+      height: var(--navbar-height);
+      background-color: var(--brand-dark);
+      z-index: 1040;
+    }
+
+    .doc-sidebar {
+      position: fixed;
+      top: var(--navbar-height);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      overflow-y: auto;
+      background-color: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      z-index: 1030;
+      transition: transform 0.25s ease, width 0.25s ease;
+    }
+
+    body.sidebar-collapsed .doc-sidebar {
+      transform: translateX(-100%);
+    }
+
+    .doc-main {
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.25s ease;
+      min-height: calc(100vh - var(--navbar-height));
+    }
+
+    body.sidebar-collapsed .doc-main {
+      margin-left: 0;
+    }
+
+    .btn-toggle {
+      color: #334155;
+      background-color: #f1f5f9;
+      border: none;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-toggle:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-toggle.group-active {
+      background-color: #eef2ff;
+      color: #4338ca;
+    }
+
+    .sidebar-link {
+      color: #475569;
+      font-size: 0.86rem;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-link:hover {
+      color: var(--brand-primary);
+      background-color: #f1f5f9;
+    }
+
+    .sidebar-link.active {
+      color: #4f46e5 !important;
+      background-color: #eef2ff !important;
+      border-left-color: #4f46e5;
+      font-weight: 600;
+    }
+
+    .doc-content-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+    }
+
+    .doc-body h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-body h2 {
+      font-size: 1.45rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 2.2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #f1f5f9;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 1.6rem;
+      margin-bottom: 0.75rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h4, .doc-body h5, .doc-body h6 {
+      font-weight: 600;
+      color: #475569;
+      margin-top: 1.25rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-blockquote {
+      border-left: 4px solid #6366f1;
+      background-color: #f8fafc;
+      padding: 0.9rem 1.15rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+      font-size: 0.95rem;
+      color: #334155;
+    }
+
+    .doc-blockquote p:last-child {
+      margin-bottom: 0;
+    }
+
+    .codehilite {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 0.9rem 1rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .codehilite pre, pre {
+      margin: 0;
+      font-family: 'Cascadia Mono', 'Consolas', 'SFMono-Regular', Menlo, Monaco, monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .diagram-wrapper {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+
+    .diagram-header {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      border-color: #334155 !important;
+    }
+
+    .diagram-svg-body {
+      padding: 1.25rem 1rem;
+      overflow-x: auto;
+      text-align: center;
+      background-color: #ffffff;
+    }
+
+    code {
+      font-family: 'Cascadia Mono', 'Consolas', monospace;
+      font-size: 0.875em;
+      color: #0f172a;
+      background-color: #f1f5f9;
+      padding: 0.15em 0.38em;
+      border-radius: 0.25rem;
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    .task-list-item {
+      list-style-type: none;
+      margin-left: -1.25rem;
+    }
+
+    .toc-card ul {
+      margin-bottom: 0;
+      padding-left: 1.2rem;
+      font-size: 0.88rem;
+    }
+
+    .toc-card a {
+      text-decoration: none;
+      color: #334155;
+    }
+
+    .toc-card a:hover {
+      color: #4f46e5;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-sidebar {
+        position: relative;
+        top: 0;
+        width: 100%;
+        max-height: 420px;
+        border-right: none;
+        border-bottom: 1px solid #cbd5e1;
+        transform: none !important;
+      }
+
+      body.sidebar-collapsed .doc-sidebar {
+        display: none;
+      }
+
+      .doc-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-dark doc-navbar fixed-top shadow-sm px-3">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-light btn-sm d-flex align-items-center gap-1" id="sidebarToggle" type="button" title="Ocultar o mostrar barra lateral" aria-label="Alternar barra lateral">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+          <span class="d-none d-sm-inline small">Menú</span>
+        </button>
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2 mb-0 ms-1" href="../README.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#818cf8" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z"/>
+          </svg>
+          <span>mejorar.dev · .NET &amp; Cloud</span>
+        </a>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="../../../index.html" class="btn btn-sm btn-outline-light d-none d-lg-inline-block">&larr; Portal</a>
+        <a href="../00-plan-de-estudio.html" class="btn btn-sm btn-outline-info d-none d-md-inline-block">Plan 27 semanas</a>
+        <a href="../01-glosario.html" class="btn btn-sm btn-outline-warning d-none d-md-inline-block">Glosario</a>
+        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">modulo-03-observabilidad/02-logging-estructurado.html</span>
+      </div>
+    </div>
+  </nav>
+
+  <aside class="doc-sidebar shadow-sm p-3" id="docSidebar" aria-label="Navegación de documentación">
+    <div class="mb-3">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-light border-end-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+        </span>
+        <input type="search" id="sidebarFilter" class="form-control bg-light border-start-0" placeholder="Filtrar módulos..." aria-label="Filtrar módulos">
+      </div>
+    </div>
+    <nav id="sidebarNav">
+      <div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-section-0" aria-expanded="true" aria-controls="submenu-section-0"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>Inicio / Raíz</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-section-0">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../README.html" title="README.html"><span class="d-block text-truncate">🚀 mejorar.dev — Plan de crecimiento para desarrolladores .NET</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../00-plan-de-estudio.html" title="00-plan-de-estudio.html"><span class="d-block text-truncate">📅 Plan de estudio — 27 semanas</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-glosario.html" title="01-glosario.html"><span class="d-block text-truncate">📖 Glosario</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../recursos.html" title="recursos.html"><span class="d-block text-truncate">📚 Recursos recomendados</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-01-patrones-diseno-1" aria-expanded="true" aria-controls="submenu-modulo-01-patrones-diseno-1"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>01 · Patrones de Diseño</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">5</span></button>
+<div class="collapse show" id="submenu-modulo-01-patrones-diseno-1">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/01-fundamentos-solid.html" title="modulo-01-patrones-diseno/01-fundamentos-solid.html"><span class="d-block text-truncate">1.1 Fundamentos: SOLID, DRY, KISS, YAGNI y composición</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/02-patrones-creacionales.html" title="modulo-01-patrones-diseno/02-patrones-creacionales.html"><span class="d-block text-truncate">1.2 Patrones creacionales (Creational Patterns)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/03-patrones-estructurales.html" title="modulo-01-patrones-diseno/03-patrones-estructurales.html"><span class="d-block text-truncate">1.3 Patrones estructurales (Structural Patterns)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/04-patrones-comportamiento.html" title="modulo-01-patrones-diseno/04-patrones-comportamiento.html"><span class="d-block text-truncate">1.4 Patrones de comportamiento (Behavioral Patterns)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/05-patrones-empresariales.html" title="modulo-01-patrones-diseno/05-patrones-empresariales.html"><span class="d-block text-truncate">1.5 Patrones empresariales en .NET</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-02-arquitectura-2" aria-expanded="true" aria-controls="submenu-modulo-02-arquitectura-2"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>02 · Arquitectura</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">5</span></button>
+<div class="collapse show" id="submenu-modulo-02-arquitectura-2">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/01-estilos-arquitectonicos.html" title="modulo-02-arquitectura/01-estilos-arquitectonicos.html"><span class="d-block text-truncate">2.1 Estilos arquitectónicos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/02-domain-driven-design.html" title="modulo-02-arquitectura/02-domain-driven-design.html"><span class="d-block text-truncate">2.2 Domain-Driven Design (DDD) práctico</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/03-escalabilidad.html" title="modulo-02-arquitectura/03-escalabilidad.html"><span class="d-block text-truncate">2.3 Escalabilidad</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/04-resiliencia.html" title="modulo-02-arquitectura/04-resiliencia.html"><span class="d-block text-truncate">2.4 Resiliencia</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/05-cloud-native-aspire.html" title="modulo-02-arquitectura/05-cloud-native-aspire.html"><span class="d-block text-truncate">2.5 Cloud-native con Aspire y contenedores</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-07-redes-3" aria-expanded="true" aria-controls="submenu-modulo-07-redes-3"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>07 · Redes (Networking)</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-07-redes-3">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/01-fundamentos-redes.html" title="modulo-07-redes/01-fundamentos-redes.html"><span class="d-block text-truncate">7.1 Fundamentos de redes para ingenieros de software</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/02-http-tls-dns.html" title="modulo-07-redes/02-http-tls-dns.html"><span class="d-block text-truncate">7.2 HTTP, TLS y DNS en profundidad</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/03-redes-en-dotnet.html" title="modulo-07-redes/03-redes-en-dotnet.html"><span class="d-block text-truncate">7.3 Redes desde .NET: HttpClient, conexiones, gRPC y troubleshooting</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/04-redes-en-azure.html" title="modulo-07-redes/04-redes-en-azure.html"><span class="d-block text-truncate">7.4 Redes en Azure</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold group-active" type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-03-observabilidad-4" aria-expanded="true" aria-controls="submenu-modulo-03-observabilidad-4"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>03 · Observabilidad</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-03-observabilidad-4">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="01-fundamentos.html" title="modulo-03-observabilidad/01-fundamentos.html"><span class="d-block text-truncate">3.1 Fundamentos de observabilidad</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link active py-1 px-3 rounded-2" href="02-logging-estructurado.html" aria-current="page" title="modulo-03-observabilidad/02-logging-estructurado.html"><span class="d-block text-truncate">3.2 Logging estructurado en .NET</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="03-opentelemetry-dotnet.html" title="modulo-03-observabilidad/03-opentelemetry-dotnet.html"><span class="d-block text-truncate">3.3 OpenTelemetry en .NET</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="04-health-checks-azure-monitor.html" title="modulo-03-observabilidad/04-health-checks-azure-monitor.html"><span class="d-block text-truncate">3.4 Health checks, Azure Monitor y alertas</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-04-gobernabilidad-5" aria-expanded="true" aria-controls="submenu-modulo-04-gobernabilidad-5"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>04 · Gobernabilidad</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-modulo-04-gobernabilidad-5">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-04-gobernabilidad/01-gobernanza-codigo-arquitectura.html" title="modulo-04-gobernabilidad/01-gobernanza-codigo-arquitectura.html"><span class="d-block text-truncate">4.1 Gobernanza de código y arquitectura</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-04-gobernabilidad/02-gobernanza-apis.html" title="modulo-04-gobernabilidad/02-gobernanza-apis.html"><span class="d-block text-truncate">4.2 Gobernanza de APIs</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-04-gobernabilidad/03-gobernanza-azure.html" title="modulo-04-gobernabilidad/03-gobernanza-azure.html"><span class="d-block text-truncate">4.3 Gobernanza en Azure</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-05-cicd-azure-devops-6" aria-expanded="true" aria-controls="submenu-modulo-05-cicd-azure-devops-6"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>05 · CI/CD Azure DevOps</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-05-cicd-azure-devops-6">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/01-fundamentos-pipelines-yaml.html" title="modulo-05-cicd-azure-devops/01-fundamentos-pipelines-yaml.html"><span class="d-block text-truncate">5.1 Fundamentos de Azure Pipelines en YAML</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/02-templates-reutilizacion.html" title="modulo-05-cicd-azure-devops/02-templates-reutilizacion.html"><span class="d-block text-truncate">5.2 Templates y reutilización en Azure Pipelines</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/03-seguridad-environments.html" title="modulo-05-cicd-azure-devops/03-seguridad-environments.html"><span class="d-block text-truncate">5.3 Seguridad del pipeline: environments, approvals, secretos y Workload Identity Federation</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/04-iac-bicep-despliegues.html" title="modulo-05-cicd-azure-devops/04-iac-bicep-despliegues.html"><span class="d-block text-truncate">5.4 Infraestructura como código (Bicep) y estrategias de despliegue</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-06-microsoft-entra-7" aria-expanded="true" aria-controls="submenu-modulo-06-microsoft-entra-7"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>06 · Microsoft Entra</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-06-microsoft-entra-7">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/01-fundamentos-identidad.html" title="modulo-06-microsoft-entra/01-fundamentos-identidad.html"><span class="d-block text-truncate">6.1 Fundamentos de identidad: OAuth 2.0, OpenID Connect y tokens</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/02-app-registrations-identity-web.html" title="modulo-06-microsoft-entra/02-app-registrations-identity-web.html"><span class="d-block text-truncate">6.2 App registrations y Microsoft.Identity.Web</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/03-managed-identities-rbac.html" title="modulo-06-microsoft-entra/03-managed-identities-rbac.html"><span class="d-block text-truncate">6.3 Managed Identities y Azure RBAC</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/04-seguridad-avanzada.html" title="modulo-06-microsoft-entra/04-seguridad-avanzada.html"><span class="d-block text-truncate">6.4 Seguridad avanzada: Conditional Access, PIM, External ID y Workload ID</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-proyecto-integrador-8" aria-expanded="true" aria-controls="submenu-proyecto-integrador-8"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>Proyecto Integrador</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">1</span></button>
+<div class="collapse show" id="submenu-proyecto-integrador-8">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../proyecto-integrador/README.html" title="proyecto-integrador/README.html"><span class="d-block text-truncate">🛒 Proyecto integrador: OrderFlow</span></a></li>
+</ul>
+</div>
+</div>
+    </nav>
+  </aside>
+
+  <main class="doc-main p-3 p-md-4 p-lg-5">
+    <div class="container-xxl">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-white px-3 py-2 rounded-3 shadow-sm border mb-0 small">
+          <li class="breadcrumb-item"><a href="../../../index.html" class="text-decoration-none">Portal</a></li>
+<li class="breadcrumb-item"><a href="../README.html" class="text-decoration-none">mejorar.dev</a></li>
+<li class="breadcrumb-item text-muted">modulo-03-observabilidad</li>
+<li class="breadcrumb-item active fw-semibold" aria-current="page">02-logging-estructurado.html</li>
+        </ol>
+      </nav>
+
+      
+        <div class="card border-0 shadow-sm mb-4 toc-card">
+          <div class="card-body py-2 px-3">
+            <button class="btn btn-sm btn-link text-decoration-none text-dark fw-semibold p-0 d-flex align-items-center gap-2 w-100 justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#pageTocCollapse" aria-expanded="false" aria-controls="pageTocCollapse">
+              <span class="d-flex align-items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                </svg>
+                Contenido de esta página
+              </span>
+              <span class="small text-muted">Mostrar / Ocultar</span>
+            </button>
+            <div class="collapse mt-2" id="pageTocCollapse">
+              <div class="toc">
+<ul>
+<li><a href="#32-logging-estructurado-en-net">3.2 Logging estructurado en .NET</a><ul>
+<li><a href="#objetivos">🎯 Objetivos</a></li>
+<li><a href="#1-texto-plano-vs-estructurado">1. Texto plano vs estructurado</a></li>
+<li><a href="#2-loggermessage-source-generator-la-forma-recomendada">2. [LoggerMessage] source generator ⭐ (la forma recomendada)</a></li>
+<li><a href="#3-niveles-de-log-guia-practica">3. Niveles de log: guía práctica</a></li>
+<li><a href="#4-scopes-contexto-que-se-hereda">4. Scopes: contexto que se hereda</a></li>
+<li><a href="#5-manejo-global-de-errores-logs-problemdetails">5. Manejo global de errores (logs + ProblemDetails)</a></li>
+<li><a href="#6-datos-sensibles-y-redaction">6. Datos sensibles y redaction</a><ul>
+<li><a href="#microsoftextensionscomplianceredaction">Microsoft.Extensions.Compliance.Redaction</a></li>
+</ul>
+</li>
+<li><a href="#7-logging-de-requests-http">7. Logging de requests HTTP</a></li>
+<li><a href="#8-serilog-o-el-logging-nativo">8. ¿Serilog o el logging nativo?</a></li>
+<li><a href="#checklist">✅ Checklist</a></li>
+<li><a href="#ejercicio-orderflow">🏋️ Ejercicio (OrderFlow)</a></li>
+<li><a href="#profundiza">📚 Profundiza</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+            </div>
+          </div>
+        </div>
+        
+
+      <article class="doc-content-card shadow-sm p-4 p-md-5 doc-body">
+        <h1 id="32-logging-estructurado-en-net">3.2 Logging estructurado en .NET</h1>
+<p><a href="01-fundamentos.html">⬅ Anterior: Fundamentos</a> · <a href="../README.html">Índice</a> · <a href="03-opentelemetry-dotnet.html">Siguiente: OpenTelemetry ➡</a></p>
+<h2 id="objetivos">🎯 Objetivos</h2>
+<ul>
+<li>Escribir logs estructurados, consultables y de alto rendimiento con <code>ILogger</code>.</li>
+<li>Usar el source generator <code>[LoggerMessage]</code>, scopes y niveles correctamente.</li>
+<li>Proteger datos sensibles (redaction) y controlar costos.</li>
+</ul>
+<hr />
+<h2 id="1-texto-plano-vs-estructurado">1. Texto plano vs estructurado</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ Interpolación: se pierde la estructura, se asigna memoria aunque el nivel esté deshabilitado</span>
+<span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">$"Pedido {orderId} creado por {customerId} con total {total}"</span><span class="p">);</span>
+
+<span class="c1">// ✅ Message template: cada placeholder se convierte en un campo consultable</span>
+<span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">"Pedido {OrderId} creado por {CustomerId} con total {Total}"</span><span class="p">,</span><span class="w"> </span><span class="n">orderId</span><span class="p">,</span><span class="w"> </span><span class="n">customerId</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">);</span>
+</code></pre></div>
+
+<p>El resultado en el backend:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"Timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-11-13T15:04:05Z"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"Level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Information"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"MessageTemplate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Pedido {OrderId} creado por {CustomerId} con total {Total}"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"OrderId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"0193f2a1-..."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"CustomerId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"c-42"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"Total"</span><span class="p">:</span><span class="w"> </span><span class="mi">150000</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"TraceId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"4bf92f3577b34da6a3ce929d0e0e4736"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"SpanId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"00f067aa0ba902b7"</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Ahora puedes consultar: "todos los logs del pedido X", "promedio de Total por hora", "todo lo que pasó en esta traza".</p>
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>💡 Usa <strong>PascalCase</strong> y nombres consistentes para los campos (<code>OrderId</code> siempre igual en todo el sistema). Un diccionario de campos estándar es parte de la gobernanza.</p>
+</blockquote>
+<hr />
+<h2 id="2-loggermessage-source-generator-la-forma-recomendada">2. <code>[LoggerMessage]</code> source generator ⭐ (la forma recomendada)</h2>
+<p>Genera en compilación código sin boxing ni parseo de templates en runtime. Además centraliza los mensajes y les asigna <code>EventId</code>.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">internal</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">partial</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">OrderingLog</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="na">[LoggerMessage(EventId = 1001, Level = LogLevel.Information,</span>
+<span class="na">        Message = "Pedido {OrderId} creado para cliente {CustomerId} con {ItemCount} ítems")]</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">partial</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">OrderCreated</span><span class="p">(</span><span class="k">this</span><span class="w"> </span><span class="n">ILogger</span><span class="w"> </span><span class="n">logger</span><span class="p">,</span><span class="w"> </span><span class="n">Guid</span><span class="w"> </span><span class="n">orderId</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">customerId</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">itemCount</span><span class="p">);</span>
+
+<span class="w">    </span><span class="na">[LoggerMessage(EventId = 1002, Level = LogLevel.Warning,</span>
+<span class="na">        Message = "Pago rechazado para pedido {OrderId}: {Reason}")]</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">partial</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">PaymentDeclined</span><span class="p">(</span><span class="k">this</span><span class="w"> </span><span class="n">ILogger</span><span class="w"> </span><span class="n">logger</span><span class="p">,</span><span class="w"> </span><span class="n">Guid</span><span class="w"> </span><span class="n">orderId</span><span class="p">,</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">reason</span><span class="p">);</span>
+
+<span class="w">    </span><span class="na">[LoggerMessage(EventId = 1003, Level = LogLevel.Error,</span>
+<span class="na">        Message = "Error publicando mensaje de outbox {MessageId}")]</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">partial</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">OutboxPublishFailed</span><span class="p">(</span><span class="k">this</span><span class="w"> </span><span class="n">ILogger</span><span class="w"> </span><span class="n">logger</span><span class="p">,</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="n">Guid</span><span class="w"> </span><span class="n">messageId</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// Uso</span>
+<span class="n">logger</span><span class="p">.</span><span class="n">OrderCreated</span><span class="p">(</span><span class="n">order</span><span class="p">.</span><span class="n">Id</span><span class="p">,</span><span class="w"> </span><span class="n">order</span><span class="p">.</span><span class="n">CustomerId</span><span class="p">.</span><span class="n">ToString</span><span class="p">(),</span><span class="w"> </span><span class="n">order</span><span class="p">.</span><span class="n">Items</span><span class="p">.</span><span class="n">Count</span><span class="p">);</span>
+<span class="n">logger</span><span class="p">.</span><span class="n">OutboxPublishFailed</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">.</span><span class="n">Id</span><span class="p">);</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3-niveles-de-log-guia-practica">3. Niveles de log: guía práctica</h2>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Nivel</th>
+<th>Cuándo</th>
+<th>¿En producción?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Trace</code></td>
+<td>Detalle extremo (payloads, pasos internos)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>Debug</code></td>
+<td>Información útil para desarrollo</td>
+<td>No (o temporalmente)</td>
+</tr>
+<tr>
+<td><code>Information</code></td>
+<td>Eventos de negocio relevantes / ciclo de vida</td>
+<td>Sí, con moderación</td>
+</tr>
+<tr>
+<td><code>Warning</code></td>
+<td>Algo inesperado pero recuperable (retry, fallback, validación de negocio fallida recurrente)</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td><code>Error</code></td>
+<td>Una operación falló</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td><code>Critical</code></td>
+<td>La app no puede continuar</td>
+<td>Sí</td>
+</tr>
+</tbody>
+</table></div>
+<div class="codehilite"><pre><span></span><code><span class="c1">// appsettings.json — controla verbosidad por categoría (namespace)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="nt">"Logging"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"LogLevel"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"Default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Information"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"Microsoft.AspNetCore"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Warning"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"Microsoft.EntityFrameworkCore.Database.Command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Warning"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"OrderFlow"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Information"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>⚠️ <strong>No loguees y relances</strong> la misma excepción en cada capa: tendrás 5 logs del mismo error. Loguea donde la manejas (o deja que el middleware global la registre).</p>
+</blockquote>
+<hr />
+<h2 id="4-scopes-contexto-que-se-hereda">4. Scopes: contexto que se hereda</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="p">(</span><span class="n">logger</span><span class="p">.</span><span class="n">BeginScope</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">Dictionary</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">object</span><span class="o">&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="na">["OrderId"]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">command</span><span class="p">.</span><span class="n">OrderId</span><span class="p">,</span>
+<span class="w">    </span><span class="na">["TenantId"]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tenant</span><span class="p">.</span><span class="n">Id</span>
+<span class="p">}))</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">"Iniciando cobro"</span><span class="p">);</span><span class="w">   </span><span class="c1">// incluye OrderId y TenantId</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">gateway</span><span class="p">.</span><span class="n">ChargeAsync</span><span class="p">(...);</span>
+<span class="w">    </span><span class="n">logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">"Cobro completado"</span><span class="p">);</span><span class="w">  </span><span class="c1">// también</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Con OpenTelemetry, configura <code>IncludeScopes = true</code> para exportarlos.</p>
+<hr />
+<h2 id="5-manejo-global-de-errores-logs-problemdetails">5. Manejo global de errores (logs + ProblemDetails)</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddProblemDetails</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">CustomizeProblemDetails</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">        </span><span class="n">ctx</span><span class="p">.</span><span class="n">ProblemDetails</span><span class="p">.</span><span class="n">Extensions</span><span class="p">[</span><span class="s">"traceId"</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Activity</span><span class="p">.</span><span class="n">Current</span><span class="o">?.</span><span class="n">TraceId</span><span class="p">.</span><span class="n">ToString</span><span class="p">());</span>
+
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddExceptionHandler</span><span class="o">&lt;</span><span class="n">GlobalExceptionHandler</span><span class="o">&gt;</span><span class="p">();</span>
+
+<span class="k">internal</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">GlobalExceptionHandler</span><span class="p">(</span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">GlobalExceptionHandler</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">,</span>
+<span class="w">    </span><span class="n">IProblemDetailsService</span><span class="w"> </span><span class="n">problemDetails</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IExceptionHandler</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">ValueTask</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">TryHandleAsync</span><span class="p">(</span><span class="n">HttpContext</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">Exception</span><span class="w"> </span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">logger</span><span class="p">.</span><span class="n">LogError</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="s">"Excepción no controlada en {Path}"</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">.</span><span class="n">Request</span><span class="p">.</span><span class="n">Path</span><span class="p">);</span>
+<span class="w">        </span><span class="n">ctx</span><span class="p">.</span><span class="n">Response</span><span class="p">.</span><span class="n">StatusCode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">StatusCodes</span><span class="p">.</span><span class="n">Status500InternalServerError</span><span class="p">;</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">problemDetails</span><span class="p">.</span><span class="n">TryWriteAsync</span><span class="p">(</span><span class="k">new</span><span class="p">()</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">HttpContext</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span>
+<span class="w">            </span><span class="n">ProblemDetails</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Error interno"</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="w"> </span><span class="p">},</span>
+<span class="w">            </span><span class="n">Exception</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ex</span>
+<span class="w">        </span><span class="p">});</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">UseExceptionHandler</span><span class="p">();</span>
+</code></pre></div>
+
+<p>El cliente recibe un <code>traceId</code> que el soporte puede buscar directamente en Application Insights. 🎯</p>
+<hr />
+<h2 id="6-datos-sensibles-y-redaction">6. Datos sensibles y redaction</h2>
+<p><strong>Nunca</strong> loguees: contraseñas, tokens, números de tarjeta, documentos de identidad completos, datos de salud. (Ley 1581 de 2012 en Colombia, GDPR, PCI-DSS).</p>
+<h3 id="microsoftextensionscomplianceredaction"><code>Microsoft.Extensions.Compliance.Redaction</code></h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// 1. Clasifica datos</span>
+<span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">DataTaxonomy</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">DataClassification</span><span class="w"> </span><span class="n">Pii</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">"OrderFlow"</span><span class="p">,</span><span class="w"> </span><span class="s">"PII"</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">PiiAttribute</span><span class="p">()</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">DataClassificationAttribute</span><span class="p">(</span><span class="n">DataTaxonomy</span><span class="p">.</span><span class="n">Pii</span><span class="p">);</span>
+
+<span class="c1">// 2. En el log</span>
+<span class="na">[LoggerMessage(Level = LogLevel.Information, Message = "Cliente {Email} registrado")]</span>
+<span class="k">public</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">partial</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">CustomerRegistered</span><span class="p">(</span><span class="k">this</span><span class="w"> </span><span class="n">ILogger</span><span class="w"> </span><span class="n">logger</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="n">Pii</span><span class="p">]</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">email</span><span class="p">);</span>
+
+<span class="c1">// 3. Configura</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Logging</span><span class="p">.</span><span class="n">EnableRedaction</span><span class="p">();</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddRedaction</span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="n">r</span><span class="p">.</span><span class="n">SetRedactor</span><span class="o">&lt;</span><span class="n">ErasingRedactor</span><span class="o">&gt;</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">DataClassificationSet</span><span class="p">(</span><span class="n">DataTaxonomy</span><span class="p">.</span><span class="n">Pii</span><span class="p">)));</span>
+</code></pre></div>
+
+<hr />
+<h2 id="7-logging-de-requests-http">7. Logging de requests HTTP</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddHttpLogging</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">LoggingFields</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HttpLoggingFields</span><span class="p">.</span><span class="n">RequestMethod</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">HttpLoggingFields</span><span class="p">.</span><span class="n">RequestPath</span><span class="w"> </span><span class="o">|</span>
+<span class="w">                      </span><span class="n">HttpLoggingFields</span><span class="p">.</span><span class="n">ResponseStatusCode</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">HttpLoggingFields</span><span class="p">.</span><span class="n">Duration</span><span class="p">;</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">CombineLogs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">;</span><span class="w"> </span><span class="c1">// una sola línea por request</span>
+<span class="p">});</span>
+<span class="n">app</span><span class="p">.</span><span class="n">UseHttpLogging</span><span class="p">();</span>
+</code></pre></div>
+
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>Con OpenTelemetry ya tienes spans por request con método, ruta, status y duración; el HTTP logging suele ser redundante en producción. Úsalo en diagnóstico puntual.</p>
+</blockquote>
+<hr />
+<h2 id="8-serilog-o-el-logging-nativo">8. ¿Serilog o el logging nativo?</h2>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th></th>
+<th><code>Microsoft.Extensions.Logging</code> + OpenTelemetry</th>
+<th>Serilog</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Estándar de la plataforma</td>
+<td>✅</td>
+<td>Proveedor sobre <code>ILogger</code></td>
+</tr>
+<tr>
+<td>Exportación OTLP / Azure Monitor</td>
+<td>✅ nativa</td>
+<td>Vía sinks</td>
+</tr>
+<tr>
+<td>Sinks (archivo, Seq, Elastic…)</td>
+<td>Limitados</td>
+<td>Ecosistema enorme</td>
+</tr>
+<tr>
+<td>Enrichers, configuración avanzada</td>
+<td>Básico</td>
+<td>Muy rico</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Recomendación 2026:</strong> escribe siempre contra <code>ILogger&lt;T&gt;</code> (abstracción). Exporta con <strong>OpenTelemetry</strong>. Agrega Serilog solo si necesitas sinks/enrichers específicos — tu código no cambia.</p>
+<hr />
+<h2 id="checklist">✅ Checklist</h2>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Cero logs con interpolación de strings.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Uso <code>[LoggerMessage]</code> para logs frecuentes.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Mis respuestas de error incluyen <code>traceId</code>.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">No logueo datos sensibles; sé configurar redaction.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Configuro niveles por categoría.</li>
+</ul>
+<h2 id="ejercicio-orderflow">🏋️ Ejercicio (OrderFlow)</h2>
+<ol>
+<li>Crea <code>OrderingLog</code> con 6 mensajes <code>[LoggerMessage]</code> y reemplaza todos los logs.</li>
+<li>Implementa <code>GlobalExceptionHandler</code> con <code>traceId</code> en ProblemDetails.</li>
+<li>Marca el email del cliente como <code>[Pii]</code> y verifica que sale redactado.</li>
+<li>Agrega un analyzer que prohíba interpolación en logs (CA2254 ya lo advierte — súbelo a error).</li>
+</ol>
+<h2 id="profundiza">📚 Profundiza</h2>
+<ul>
+<li><a href="https://learn.microsoft.com/dotnet/core/extensions/logging" target="_blank" rel="noopener noreferrer">Logging in .NET</a>.</li>
+<li><a href="https://learn.microsoft.com/dotnet/core/extensions/logger-message-generator" target="_blank" rel="noopener noreferrer">Compile-time logging source generation</a>.</li>
+<li><a href="https://learn.microsoft.com/dotnet/core/extensions/data-redaction" target="_blank" rel="noopener noreferrer">Data redaction in .NET</a>.</li>
+</ul>
+      </article>
+
+      <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+        <a href="01-fundamentos.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>&larr; 3.1 Fundamentos de observabilidad</span></a>
+<a href="03-opentelemetry-dotnet.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>3.3 OpenTelemetry en .NET &rarr;</span></a>
+      </div>
+
+      <footer class="text-center text-muted small mt-5 pt-3 border-top">
+        mejorar.dev &middot; Plan de crecimiento para desarrolladores .NET &middot; Bootstrap 5 + Mermaid.js
+      </footer>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const toggleBtn = document.getElementById('sidebarToggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+          document.body.classList.toggle('sidebar-collapsed');
+        });
+      }
+
+      const currentPath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/').toLowerCase();
+      const sidebarLinks = document.querySelectorAll('#sidebarNav a.sidebar-link');
+      let matchedLink = null;
+
+      sidebarLinks.forEach(function (link) {
+        try {
+          const resolved = new URL(link.getAttribute('href'), window.location.href);
+          const linkPath = decodeURIComponent(resolved.pathname).replace(/\\/g, '/').toLowerCase();
+          if (currentPath && linkPath === currentPath) {
+            matchedLink = link;
+          }
+        } catch (e) {}
+      });
+
+      if (matchedLink) {
+        sidebarLinks.forEach(function (l) { l.classList.remove('active'); });
+        matchedLink.classList.add('active');
+        matchedLink.setAttribute('aria-current', 'page');
+        const parentCollapse = matchedLink.closest('.collapse');
+        if (parentCollapse && !parentCollapse.classList.contains('show')) {
+          parentCollapse.classList.add('show');
+        }
+        matchedLink.scrollIntoView({ block: 'nearest' });
+      } else {
+        const presetActive = document.querySelector('#sidebarNav a.sidebar-link.active');
+        if (presetActive) {
+          presetActive.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      const filterInput = document.getElementById('sidebarFilter');
+      if (filterInput) {
+        filterInput.addEventListener('input', function () {
+          const query = this.value.trim().toLowerCase();
+          const groups = document.querySelectorAll('.sidebar-group');
+          groups.forEach(function (group) {
+            const items = group.querySelectorAll('.nav-item');
+            let visibleCount = 0;
+            items.forEach(function (item) {
+              const text = item.textContent.toLowerCase();
+              const match = !query || text.includes(query);
+              item.style.display = match ? '' : 'none';
+              if (match) visibleCount++;
+            });
+            group.style.display = visibleCount > 0 ? '' : 'none';
+            if (query && visibleCount > 0) {
+              const collapseEl = group.querySelector('.collapse');
+              if (collapseEl) collapseEl.classList.add('show');
+            }
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

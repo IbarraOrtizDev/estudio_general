@@ -1,11 +1,218 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Document</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal de Estudio Técnico — Desarrollo Agéntico IA &amp; Arquitectura .NET</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-card: #ffffff;
+      --accent-ai: #0284c7;
+      --accent-net: #4f46e5;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f1f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .hero-header {
+      background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 100%);
+      color: #f8fafc;
+      padding: 4rem 0 3.5rem;
+      border-bottom: 1px solid #334155;
+    }
+
+    .track-card {
+      background-color: var(--bg-card);
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .track-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.12);
+    }
+
+    .track-icon-ai {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background-color: #e0f2fe;
+      color: #0284c7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .track-icon-net {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      background-color: #eef2ff;
+      color: #4f46e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .module-pill {
+      display: inline-block;
+      font-size: 0.78rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      background-color: #f8fafc;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .module-pill:hover {
+      background-color: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
+    }
+
+    footer {
+      margin-top: auto;
+    }
+  </style>
 </head>
 <body>
-	<a href="./desarrolloAI/dist_html/README.html">Ver Estidio IA<//a>
+
+  <!-- Hero Section -->
+  <header class="hero-header shadow-sm">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-9">
+          <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle mb-3 px-3 py-1 rounded-pill">
+            Repositorio de Estudio &amp; Referencia Técnica
+          </span>
+          <h1 class="display-5 fw-bold mb-3">Portal de Estudio: Ingeniería de Software &amp; IA</h1>
+          <p class="lead text-secondary-emphasis mb-0" style="color: #cbd5e1 !important;">
+            Guías prácticas, rutas de aprendizaje, patrones de arquitectura y proyectos integradores navegables en formato web estático.
+          </p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container py-5">
+    <div class="row g-4">
+
+      <!-- Card 1: Desarrollo Agéntico con IA -->
+      <div class="col-lg-6">
+        <div class="track-card p-4 p-md-5 shadow-sm">
+          <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="track-icon-ai">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5ZM3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.58 26.58 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.933.933 0 0 1-.765.935c-.845.147-2.34.346-4.235.346-1.895 0-3.39-.2-4.235-.346A.933.933 0 0 1 3 9.219V8.062Zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a24.767 24.767 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25.286 25.286 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135Z"/>
+                <path d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2V1.866ZM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5Z"/>
+              </svg>
+            </div>
+            <span class="badge bg-sky-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill">
+              9 Módulos &middot; 35 Documentos
+            </span>
+          </div>
+
+          <h2 class="h3 fw-bold mb-2">Desarrollo Agéntico con IA</h2>
+          <p class="text-muted mb-4">
+            Guía completa sobre ingeniería de contexto, flujos de trabajo agénticos, Claude Code, OpenCode, servidores MCP, desarrollo guiado por especificaciones (SDD), testing automatizado y RAG.
+          </p>
+
+          <div class="mb-4">
+            <div class="small fw-semibold text-uppercase text-muted mb-2">Accesos directos a módulos:</div>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="./desarrolloAI/dist_html/00-ruta-de-aprendizaje.html" class="module-pill">00 · Ruta de aprendizaje</a>
+              <a href="./desarrolloAI/dist_html/01-fundamentos/01-que-es-el-desarrollo-agentico.html" class="module-pill">01 · Fundamentos</a>
+              <a href="./desarrolloAI/dist_html/02-flujos-de-trabajo/01-flujos-de-trabajo-agenticos.html" class="module-pill">02 · Flujos de Trabajo</a>
+              <a href="./desarrolloAI/dist_html/03-herramientas/01-claude-code.html" class="module-pill">03 · Claude Code &amp; OpenCode</a>
+              <a href="./desarrolloAI/dist_html/04-extensibilidad/01-skills.html" class="module-pill">04 · Skills &amp; Hooks</a>
+              <a href="./desarrolloAI/dist_html/05-mcp/01-conceptos-y-arquitectura-mcp.html" class="module-pill">05 · Protocolo MCP</a>
+              <a href="./desarrolloAI/dist_html/06-spec-driven/01-desarrollo-guiado-por-especificaciones.html" class="module-pill">06 · Spec-Driven</a>
+              <a href="./desarrolloAI/dist_html/07-testing/01-estrategias-de-testing-con-agentes.html" class="module-pill">07 · Testing</a>
+              <a href="./desarrolloAI/dist_html/08-proyecto-integrador/README.html" class="module-pill">08 · Proyecto Integrador</a>
+              <a href="./desarrolloAI/dist_html/09-avanzado/01-sandboxing-y-ejecucion-aislada.html" class="module-pill">09 · Avanzado (RAG &amp; OTel)</a>
+            </div>
+          </div>
+
+          <div class="mt-auto pt-3 border-top d-flex flex-wrap gap-2">
+            <a href="./desarrolloAI/dist_html/README.html" class="btn btn-primary px-4 fw-semibold">
+              Abrir Documentación IA &rarr;
+            </a>
+            <a href="./desarrolloAI/dist_html/00-ruta-de-aprendizaje.html" class="btn btn-outline-secondary">
+              Ver Ruta de Aprendizaje
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: mejorar.dev (.NET & Cloud Architecture) -->
+      <div class="col-lg-6">
+        <div class="track-card p-4 p-md-5 shadow-sm">
+          <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="track-icon-net">
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z"/>
+              </svg>
+            </div>
+            <span class="badge bg-indigo-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill">
+              7 Módulos &middot; 34 Documentos
+            </span>
+          </div>
+
+          <h2 class="h3 fw-bold mb-2">mejorar.dev — Arquitectura .NET &amp; Cloud</h2>
+          <p class="text-muted mb-4">
+            Plan de crecimiento de 27 semanas para desarrolladores .NET (.NET 10 LTS, C# 14, ASP.NET Core, Azure): patrones GoF y empresariales, DDD, redes, observabilidad OpenTelemetry, gobernanza, CI/CD y Entra ID.
+          </p>
+
+          <div class="mb-4">
+            <div class="small fw-semibold text-uppercase text-muted mb-2">Accesos directos a módulos:</div>
+            <div class="d-flex flex-wrap gap-2">
+              <a href="./mejorar.dev/dist_html/00-plan-de-estudio.html" class="module-pill">00 · Plan 27 Semanas</a>
+              <a href="./mejorar.dev/dist_html/01-glosario.html" class="module-pill">01 · Glosario (+220 términos)</a>
+              <a href="./mejorar.dev/dist_html/modulo-01-patrones-diseno/01-fundamentos-solid.html" class="module-pill">M1 · Patrones &amp; SOLID</a>
+              <a href="./mejorar.dev/dist_html/modulo-02-arquitectura/01-estilos-arquitectonicos.html" class="module-pill">M2 · Arquitectura &amp; DDD</a>
+              <a href="./mejorar.dev/dist_html/modulo-07-redes/01-fundamentos-redes.html" class="module-pill">M7 · Redes &amp; Azure VNet</a>
+              <a href="./mejorar.dev/dist_html/modulo-03-observabilidad/01-fundamentos.html" class="module-pill">M3 · Observabilidad &amp; OTel</a>
+              <a href="./mejorar.dev/dist_html/modulo-04-gobernabilidad/01-gobernanza-codigo-arquitectura.html" class="module-pill">M4 · Gobernabilidad</a>
+              <a href="./mejorar.dev/dist_html/modulo-05-cicd-azure-devops/01-fundamentos-pipelines-yaml.html" class="module-pill">M5 · CI/CD &amp; Bicep</a>
+              <a href="./mejorar.dev/dist_html/modulo-06-microsoft-entra/01-fundamentos-identidad.html" class="module-pill">M6 · Microsoft Entra</a>
+              <a href="./mejorar.dev/dist_html/proyecto-integrador/README.html" class="module-pill">Proyecto OrderFlow</a>
+            </div>
+          </div>
+
+          <div class="mt-auto pt-3 border-top d-flex flex-wrap gap-2">
+            <a href="./mejorar.dev/dist_html/README.html" class="btn btn-primary px-4 fw-semibold" style="background-color: #4f46e5; border-color: #4f46e5;">
+              Abrir mejorar.dev &rarr;
+            </a>
+            <a href="./mejorar.dev/dist_html/00-plan-de-estudio.html" class="btn btn-outline-secondary">
+              Ver Plan de 27 Semanas
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="bg-white border-top py-4 text-center text-muted small">
+    <div class="container">
+      Portal de Estudio General &middot; Desplegado estáticamente en GitHub Pages (`No-Jekyll`) &middot; Bootstrap 5
+    </div>
+  </footer>
+
 </body>
 </html>

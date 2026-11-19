@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4.2 Gobernanza de APIs — mejorar.dev (.NET &amp; Cloud Architecture)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <style>
+    :root {
+      --sidebar-width: 310px;
+      --navbar-height: 58px;
+      --brand-primary: #6366f1;
+      --brand-dark: #0f172a;
+      --bg-soft: #f8fafc;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-soft);
+      color: #1e293b;
+      padding-top: var(--navbar-height);
+      line-height: 1.65;
+    }
+
+    .doc-navbar {
+      height: var(--navbar-height);
+      background-color: var(--brand-dark);
+      z-index: 1040;
+    }
+
+    .doc-sidebar {
+      position: fixed;
+      top: var(--navbar-height);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      overflow-y: auto;
+      background-color: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      z-index: 1030;
+      transition: transform 0.25s ease, width 0.25s ease;
+    }
+
+    body.sidebar-collapsed .doc-sidebar {
+      transform: translateX(-100%);
+    }
+
+    .doc-main {
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.25s ease;
+      min-height: calc(100vh - var(--navbar-height));
+    }
+
+    body.sidebar-collapsed .doc-main {
+      margin-left: 0;
+    }
+
+    .btn-toggle {
+      color: #334155;
+      background-color: #f1f5f9;
+      border: none;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-toggle:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-toggle.group-active {
+      background-color: #eef2ff;
+      color: #4338ca;
+    }
+
+    .sidebar-link {
+      color: #475569;
+      font-size: 0.86rem;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-link:hover {
+      color: var(--brand-primary);
+      background-color: #f1f5f9;
+    }
+
+    .sidebar-link.active {
+      color: #4f46e5 !important;
+      background-color: #eef2ff !important;
+      border-left-color: #4f46e5;
+      font-weight: 600;
+    }
+
+    .doc-content-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+    }
+
+    .doc-body h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-body h2 {
+      font-size: 1.45rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 2.2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #f1f5f9;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 1.6rem;
+      margin-bottom: 0.75rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h4, .doc-body h5, .doc-body h6 {
+      font-weight: 600;
+      color: #475569;
+      margin-top: 1.25rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-blockquote {
+      border-left: 4px solid #6366f1;
+      background-color: #f8fafc;
+      padding: 0.9rem 1.15rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+      font-size: 0.95rem;
+      color: #334155;
+    }
+
+    .doc-blockquote p:last-child {
+      margin-bottom: 0;
+    }
+
+    .codehilite {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 0.9rem 1rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .codehilite pre, pre {
+      margin: 0;
+      font-family: 'Cascadia Mono', 'Consolas', 'SFMono-Regular', Menlo, Monaco, monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .diagram-wrapper {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+
+    .diagram-header {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      border-color: #334155 !important;
+    }
+
+    .diagram-svg-body {
+      padding: 1.25rem 1rem;
+      overflow-x: auto;
+      text-align: center;
+      background-color: #ffffff;
+    }
+
+    code {
+      font-family: 'Cascadia Mono', 'Consolas', monospace;
+      font-size: 0.875em;
+      color: #0f172a;
+      background-color: #f1f5f9;
+      padding: 0.15em 0.38em;
+      border-radius: 0.25rem;
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    .task-list-item {
+      list-style-type: none;
+      margin-left: -1.25rem;
+    }
+
+    .toc-card ul {
+      margin-bottom: 0;
+      padding-left: 1.2rem;
+      font-size: 0.88rem;
+    }
+
+    .toc-card a {
+      text-decoration: none;
+      color: #334155;
+    }
+
+    .toc-card a:hover {
+      color: #4f46e5;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-sidebar {
+        position: relative;
+        top: 0;
+        width: 100%;
+        max-height: 420px;
+        border-right: none;
+        border-bottom: 1px solid #cbd5e1;
+        transform: none !important;
+      }
+
+      body.sidebar-collapsed .doc-sidebar {
+        display: none;
+      }
+
+      .doc-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-dark doc-navbar fixed-top shadow-sm px-3">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-light btn-sm d-flex align-items-center gap-1" id="sidebarToggle" type="button" title="Ocultar o mostrar barra lateral" aria-label="Alternar barra lateral">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+          <span class="d-none d-sm-inline small">Menú</span>
+        </button>
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2 mb-0 ms-1" href="../README.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#818cf8" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z"/>
+          </svg>
+          <span>mejorar.dev · .NET &amp; Cloud</span>
+        </a>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="../../../index.html" class="btn btn-sm btn-outline-light d-none d-lg-inline-block">&larr; Portal</a>
+        <a href="../00-plan-de-estudio.html" class="btn btn-sm btn-outline-info d-none d-md-inline-block">Plan 27 semanas</a>
+        <a href="../01-glosario.html" class="btn btn-sm btn-outline-warning d-none d-md-inline-block">Glosario</a>
+        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">modulo-04-gobernabilidad/02-gobernanza-apis.html</span>
+      </div>
+    </div>
+  </nav>
+
+  <aside class="doc-sidebar shadow-sm p-3" id="docSidebar" aria-label="Navegación de documentación">
+    <div class="mb-3">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-light border-end-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+        </span>
+        <input type="search" id="sidebarFilter" class="form-control bg-light border-start-0" placeholder="Filtrar módulos..." aria-label="Filtrar módulos">
+      </div>
+    </div>
+    <nav id="sidebarNav">
+      <div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-section-0" aria-expanded="true" aria-controls="submenu-section-0"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>Inicio / Raíz</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-section-0">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../README.html" title="README.html"><span class="d-block text-truncate">🚀 mejorar.dev — Plan de crecimiento para desarrolladores .NET</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../00-plan-de-estudio.html" title="00-plan-de-estudio.html"><span class="d-block text-truncate">📅 Plan de estudio — 27 semanas</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-glosario.html" title="01-glosario.html"><span class="d-block text-truncate">📖 Glosario</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../recursos.html" title="recursos.html"><span class="d-block text-truncate">📚 Recursos recomendados</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-01-patrones-diseno-1" aria-expanded="true" aria-controls="submenu-modulo-01-patrones-diseno-1"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>01 · Patrones de Diseño</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">5</span></button>
+<div class="collapse show" id="submenu-modulo-01-patrones-diseno-1">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/01-fundamentos-solid.html" title="modulo-01-patrones-diseno/01-fundamentos-solid.html"><span class="d-block text-truncate">1.1 Fundamentos: SOLID, DRY, KISS, YAGNI y composición</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/02-patrones-creacionales.html" title="modulo-01-patrones-diseno/02-patrones-creacionales.html"><span class="d-block text-truncate">1.2 Patrones creacionales (Creational Patterns)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/03-patrones-estructurales.html" title="modulo-01-patrones-diseno/03-patrones-estructurales.html"><span class="d-block text-truncate">1.3 Patrones estructurales (Structural Patterns)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/04-patrones-comportamiento.html" title="modulo-01-patrones-diseno/04-patrones-comportamiento.html"><span class="d-block text-truncate">1.4 Patrones de comportamiento (Behavioral Patterns)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/05-patrones-empresariales.html" title="modulo-01-patrones-diseno/05-patrones-empresariales.html"><span class="d-block text-truncate">1.5 Patrones empresariales en .NET</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-02-arquitectura-2" aria-expanded="true" aria-controls="submenu-modulo-02-arquitectura-2"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>02 · Arquitectura</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">5</span></button>
+<div class="collapse show" id="submenu-modulo-02-arquitectura-2">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/01-estilos-arquitectonicos.html" title="modulo-02-arquitectura/01-estilos-arquitectonicos.html"><span class="d-block text-truncate">2.1 Estilos arquitectónicos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/02-domain-driven-design.html" title="modulo-02-arquitectura/02-domain-driven-design.html"><span class="d-block text-truncate">2.2 Domain-Driven Design (DDD) práctico</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/03-escalabilidad.html" title="modulo-02-arquitectura/03-escalabilidad.html"><span class="d-block text-truncate">2.3 Escalabilidad</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/04-resiliencia.html" title="modulo-02-arquitectura/04-resiliencia.html"><span class="d-block text-truncate">2.4 Resiliencia</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-02-arquitectura/05-cloud-native-aspire.html" title="modulo-02-arquitectura/05-cloud-native-aspire.html"><span class="d-block text-truncate">2.5 Cloud-native con Aspire y contenedores</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-07-redes-3" aria-expanded="true" aria-controls="submenu-modulo-07-redes-3"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>07 · Redes (Networking)</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-07-redes-3">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/01-fundamentos-redes.html" title="modulo-07-redes/01-fundamentos-redes.html"><span class="d-block text-truncate">7.1 Fundamentos de redes para ingenieros de software</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/02-http-tls-dns.html" title="modulo-07-redes/02-http-tls-dns.html"><span class="d-block text-truncate">7.2 HTTP, TLS y DNS en profundidad</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/03-redes-en-dotnet.html" title="modulo-07-redes/03-redes-en-dotnet.html"><span class="d-block text-truncate">7.3 Redes desde .NET: HttpClient, conexiones, gRPC y troubleshooting</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/04-redes-en-azure.html" title="modulo-07-redes/04-redes-en-azure.html"><span class="d-block text-truncate">7.4 Redes en Azure</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-03-observabilidad-4" aria-expanded="true" aria-controls="submenu-modulo-03-observabilidad-4"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>03 · Observabilidad</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-03-observabilidad-4">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-03-observabilidad/01-fundamentos.html" title="modulo-03-observabilidad/01-fundamentos.html"><span class="d-block text-truncate">3.1 Fundamentos de observabilidad</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-03-observabilidad/02-logging-estructurado.html" title="modulo-03-observabilidad/02-logging-estructurado.html"><span class="d-block text-truncate">3.2 Logging estructurado en .NET</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-03-observabilidad/03-opentelemetry-dotnet.html" title="modulo-03-observabilidad/03-opentelemetry-dotnet.html"><span class="d-block text-truncate">3.3 OpenTelemetry en .NET</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-03-observabilidad/04-health-checks-azure-monitor.html" title="modulo-03-observabilidad/04-health-checks-azure-monitor.html"><span class="d-block text-truncate">3.4 Health checks, Azure Monitor y alertas</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold group-active" type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-04-gobernabilidad-5" aria-expanded="true" aria-controls="submenu-modulo-04-gobernabilidad-5"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>04 · Gobernabilidad</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-modulo-04-gobernabilidad-5">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="01-gobernanza-codigo-arquitectura.html" title="modulo-04-gobernabilidad/01-gobernanza-codigo-arquitectura.html"><span class="d-block text-truncate">4.1 Gobernanza de código y arquitectura</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link active py-1 px-3 rounded-2" href="02-gobernanza-apis.html" aria-current="page" title="modulo-04-gobernabilidad/02-gobernanza-apis.html"><span class="d-block text-truncate">4.2 Gobernanza de APIs</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="03-gobernanza-azure.html" title="modulo-04-gobernabilidad/03-gobernanza-azure.html"><span class="d-block text-truncate">4.3 Gobernanza en Azure</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-05-cicd-azure-devops-6" aria-expanded="true" aria-controls="submenu-modulo-05-cicd-azure-devops-6"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>05 · CI/CD Azure DevOps</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-05-cicd-azure-devops-6">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/01-fundamentos-pipelines-yaml.html" title="modulo-05-cicd-azure-devops/01-fundamentos-pipelines-yaml.html"><span class="d-block text-truncate">5.1 Fundamentos de Azure Pipelines en YAML</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/02-templates-reutilizacion.html" title="modulo-05-cicd-azure-devops/02-templates-reutilizacion.html"><span class="d-block text-truncate">5.2 Templates y reutilización en Azure Pipelines</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/03-seguridad-environments.html" title="modulo-05-cicd-azure-devops/03-seguridad-environments.html"><span class="d-block text-truncate">5.3 Seguridad del pipeline: environments, approvals, secretos y Workload Identity Federation</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/04-iac-bicep-despliegues.html" title="modulo-05-cicd-azure-devops/04-iac-bicep-despliegues.html"><span class="d-block text-truncate">5.4 Infraestructura como código (Bicep) y estrategias de despliegue</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-06-microsoft-entra-7" aria-expanded="true" aria-controls="submenu-modulo-06-microsoft-entra-7"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>06 · Microsoft Entra</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-06-microsoft-entra-7">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/01-fundamentos-identidad.html" title="modulo-06-microsoft-entra/01-fundamentos-identidad.html"><span class="d-block text-truncate">6.1 Fundamentos de identidad: OAuth 2.0, OpenID Connect y tokens</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/02-app-registrations-identity-web.html" title="modulo-06-microsoft-entra/02-app-registrations-identity-web.html"><span class="d-block text-truncate">6.2 App registrations y Microsoft.Identity.Web</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/03-managed-identities-rbac.html" title="modulo-06-microsoft-entra/03-managed-identities-rbac.html"><span class="d-block text-truncate">6.3 Managed Identities y Azure RBAC</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/04-seguridad-avanzada.html" title="modulo-06-microsoft-entra/04-seguridad-avanzada.html"><span class="d-block text-truncate">6.4 Seguridad avanzada: Conditional Access, PIM, External ID y Workload ID</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-proyecto-integrador-8" aria-expanded="true" aria-controls="submenu-proyecto-integrador-8"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>Proyecto Integrador</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">1</span></button>
+<div class="collapse show" id="submenu-proyecto-integrador-8">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../proyecto-integrador/README.html" title="proyecto-integrador/README.html"><span class="d-block text-truncate">🛒 Proyecto integrador: OrderFlow</span></a></li>
+</ul>
+</div>
+</div>
+    </nav>
+  </aside>
+
+  <main class="doc-main p-3 p-md-4 p-lg-5">
+    <div class="container-xxl">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-white px-3 py-2 rounded-3 shadow-sm border mb-0 small">
+          <li class="breadcrumb-item"><a href="../../../index.html" class="text-decoration-none">Portal</a></li>
+<li class="breadcrumb-item"><a href="../README.html" class="text-decoration-none">mejorar.dev</a></li>
+<li class="breadcrumb-item text-muted">modulo-04-gobernabilidad</li>
+<li class="breadcrumb-item active fw-semibold" aria-current="page">02-gobernanza-apis.html</li>
+        </ol>
+      </nav>
+
+      
+        <div class="card border-0 shadow-sm mb-4 toc-card">
+          <div class="card-body py-2 px-3">
+            <button class="btn btn-sm btn-link text-decoration-none text-dark fw-semibold p-0 d-flex align-items-center gap-2 w-100 justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#pageTocCollapse" aria-expanded="false" aria-controls="pageTocCollapse">
+              <span class="d-flex align-items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                </svg>
+                Contenido de esta página
+              </span>
+              <span class="small text-muted">Mostrar / Ocultar</span>
+            </button>
+            <div class="collapse mt-2" id="pageTocCollapse">
+              <div class="toc">
+<ul>
+<li><a href="#42-gobernanza-de-apis">4.2 Gobernanza de APIs</a><ul>
+<li><a href="#objetivos">🎯 Objetivos</a></li>
+<li><a href="#1-guia-de-estilo-de-api-ejemplo-resumido">1. Guía de estilo de API (ejemplo resumido)</a></li>
+<li><a href="#2-openapi-en-net">2. OpenAPI en .NET</a><ul>
+<li><a href="#generar-el-documento-en-build-para-versionarlo-y-compararlo">Generar el documento en build (para versionarlo y compararlo)</a></li>
+<li><a href="#lint-del-contrato-con-spectral-en-el-pipeline">Lint del contrato con Spectral (en el pipeline)</a></li>
+<li><a href="#detectar-breaking-changes">Detectar breaking changes</a></li>
+</ul>
+</li>
+<li><a href="#3-versionado">3. Versionado</a></li>
+<li><a href="#4-contract-testing">4. Contract testing</a></li>
+<li><a href="#5-azure-api-management-apim">5. Azure API Management (APIM)</a><ul>
+<li><a href="#politica-de-ejemplo-xml">Política de ejemplo (XML)</a></li>
+<li><a href="#azure-api-center">Azure API Center</a></li>
+<li><a href="#apiops">APIOps</a></li>
+</ul>
+</li>
+<li><a href="#checklist">✅ Checklist</a></li>
+<li><a href="#ejercicio-orderflow">🏋️ Ejercicio (OrderFlow)</a></li>
+<li><a href="#profundiza">📚 Profundiza</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+            </div>
+          </div>
+        </div>
+        
+
+      <article class="doc-content-card shadow-sm p-4 p-md-5 doc-body">
+        <h1 id="42-gobernanza-de-apis">4.2 Gobernanza de APIs</h1>
+<p><a href="01-gobernanza-codigo-arquitectura.html">⬅ Anterior: Código y arquitectura</a> · <a href="../README.html">Índice</a> · <a href="03-gobernanza-azure.html">Siguiente: Gobernanza en Azure ➡</a></p>
+<h2 id="objetivos">🎯 Objetivos</h2>
+<ul>
+<li>Diseñar APIs consistentes con una guía de estilo.</li>
+<li>Generar y validar contratos OpenAPI (<em>API-first</em> o <em>code-first</em> con disciplina).</li>
+<li>Versionar sin romper consumidores.</li>
+<li>Gobernar APIs a escala con Azure API Management y API Center.</li>
+</ul>
+<hr />
+<h2 id="1-guia-de-estilo-de-api-ejemplo-resumido">1. Guía de estilo de API (ejemplo resumido)</h2>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Tema</th>
+<th>Regla</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>URLs</td>
+<td>Sustantivos en plural, kebab-case: <code>/orders</code>, <code>/orders/{orderId}/items</code>, <code>/payment-methods</code></td>
+</tr>
+<tr>
+<td>Acciones no CRUD</td>
+<td>Sub-recurso verbal: <code>POST /orders/{id}/cancel</code></td>
+</tr>
+<tr>
+<td>JSON</td>
+<td>camelCase; fechas ISO 8601 con zona (<code>2026-11-13T10:00:00-05:00</code>); montos como decimal + moneda</td>
+</tr>
+<tr>
+<td>Errores</td>
+<td><strong>ProblemDetails (RFC 9457)</strong> con <code>type</code>, <code>title</code>, <code>status</code>, <code>detail</code>, <code>traceId</code>, <code>errors</code></td>
+</tr>
+<tr>
+<td>Paginación</td>
+<td>Cursor: <code>?limit=20&amp;after=&lt;cursor&gt;</code> → respuesta con <code>nextCursor</code></td>
+</tr>
+<tr>
+<td>Filtros/orden</td>
+<td><code>?status=paid&amp;sort=-createdAt</code></td>
+</tr>
+<tr>
+<td>Idempotencia</td>
+<td><code>Idempotency-Key</code> en POST que crean recursos o cobran</td>
+</tr>
+<tr>
+<td>Concurrencia</td>
+<td><code>ETag</code> + <code>If-Match</code> en actualizaciones → <code>412 Precondition Failed</code></td>
+</tr>
+<tr>
+<td>Seguridad</td>
+<td>OAuth 2.0 / Entra ID; scopes por recurso (<code>Orders.Read</code>, <code>Orders.Write</code>)</td>
+</tr>
+<tr>
+<td>Correlación</td>
+<td>Propagar <code>traceparent</code></td>
+</tr>
+</tbody>
+</table></div>
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>Referencias públicas: <strong>Microsoft REST API Guidelines</strong> (en GitHub), Zalando RESTful API Guidelines, Google AIP.</p>
+</blockquote>
+<hr />
+<h2 id="2-openapi-en-net">2. OpenAPI en .NET</h2>
+<p>Desde .NET 9, ASP.NET Core genera OpenAPI de forma nativa (<code>Microsoft.AspNetCore.OpenApi</code>), y .NET 10 soporta OpenAPI 3.1.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddOpenApi</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">AddDocumentTransformer</span><span class="p">((</span><span class="n">doc</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">ct</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">doc</span><span class="p">.</span><span class="n">Info</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">Title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"OrderFlow API"</span><span class="p">,</span><span class="w"> </span><span class="n">Version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"v1"</span><span class="p">,</span><span class="w"> </span><span class="n">Description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"API de pedidos"</span><span class="w"> </span><span class="p">};</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">CompletedTask</span><span class="p">;</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">});</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">MapOpenApi</span><span class="p">();</span><span class="w">                 </span><span class="c1">// /openapi/v1.json</span>
+<span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">app</span><span class="p">.</span><span class="n">Environment</span><span class="p">.</span><span class="n">IsDevelopment</span><span class="p">())</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">MapScalarApiReference</span><span class="p">();</span><span class="w">  </span><span class="c1">// UI interactiva (paquete Scalar.AspNetCore) — Swashbuckle ya no viene en las plantillas</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">"/orders"</span><span class="p">,</span><span class="w"> </span><span class="n">PlaceOrder</span><span class="p">.</span><span class="n">Handle</span><span class="p">)</span>
+<span class="w">   </span><span class="p">.</span><span class="n">WithName</span><span class="p">(</span><span class="s">"PlaceOrder"</span><span class="p">)</span>
+<span class="w">   </span><span class="p">.</span><span class="n">WithSummary</span><span class="p">(</span><span class="s">"Crea un pedido"</span><span class="p">)</span>
+<span class="w">   </span><span class="p">.</span><span class="n">WithTags</span><span class="p">(</span><span class="s">"Orders"</span><span class="p">)</span>
+<span class="w">   </span><span class="p">.</span><span class="n">Produces</span><span class="o">&lt;</span><span class="n">PlaceOrder</span><span class="p">.</span><span class="n">Response</span><span class="o">&gt;</span><span class="p">(</span><span class="n">StatusCodes</span><span class="p">.</span><span class="n">Status201Created</span><span class="p">)</span>
+<span class="w">   </span><span class="p">.</span><span class="n">ProducesValidationProblem</span><span class="p">()</span>
+<span class="w">   </span><span class="p">.</span><span class="n">ProducesProblem</span><span class="p">(</span><span class="n">StatusCodes</span><span class="p">.</span><span class="n">Status409Conflict</span><span class="p">)</span>
+<span class="w">   </span><span class="p">.</span><span class="n">RequireAuthorization</span><span class="p">(</span><span class="s">"Orders.Write"</span><span class="p">);</span>
+</code></pre></div>
+
+<h3 id="generar-el-documento-en-build-para-versionarlo-y-compararlo">Generar el documento en build (para versionarlo y compararlo)</h3>
+<div class="codehilite"><pre><span></span><code><span class="cm">&lt;!-- OrderFlow.Api.csproj --&gt;</span>
+<span class="nt">&lt;PackageReference</span><span class="w"> </span><span class="na">Include=</span><span class="s">"Microsoft.Extensions.ApiDescription.Server"</span><span class="w"> </span><span class="nt">/&gt;</span>
+<span class="nt">&lt;PropertyGroup&gt;</span>
+<span class="w">  </span><span class="nt">&lt;OpenApiDocumentsDirectory&gt;</span>$(MSBuildProjectDirectory)/../../contracts<span class="nt">&lt;/OpenApiDocumentsDirectory&gt;</span>
+<span class="nt">&lt;/PropertyGroup&gt;</span>
+</code></pre></div>
+
+<p>Ahora <code>contracts/OrderFlow.Api.json</code> se versiona en git: <strong>cualquier cambio de contrato se ve en el PR</strong>.</p>
+<h3 id="lint-del-contrato-con-spectral-en-el-pipeline">Lint del contrato con Spectral (en el pipeline)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># .spectral.yaml</span>
+<span class="nt">extends</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"spectral:oas"</span><span class="p p-Indicator">]</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">paths-kebab-case</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Las rutas deben estar en kebab-case</span>
+<span class="w">    </span><span class="nt">given</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$.paths[*]~</span>
+<span class="w">    </span><span class="nt">then</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> function</span><span class="p">:</span><span class="w"> </span><span class="nv">pattern</span><span class="p p-Indicator">,</span><span class="nt"> functionOptions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> match</span><span class="p">:</span><span class="w"> </span><span class="s">"^(/[a-z0-9-{}]+)+$"</span><span class="w"> </span><span class="p p-Indicator">}</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">operation-operationId</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">error</span>
+<span class="w">  </span><span class="nt">operation-tags</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">error</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>npx<span class="w"> </span>@stoplight/spectral-cli<span class="w"> </span>lint<span class="w"> </span>contracts/OrderFlow.Api.json<span class="w"> </span>--fail-severity<span class="o">=</span>error
+</code></pre></div>
+
+<h3 id="detectar-breaking-changes">Detectar breaking changes</h3>
+<p>Compara el contrato del PR contra el de <code>main</code> con <strong>oasdiff</strong> (<code>oasdiff breaking base.json pr.json --fail-on ERR</code>). Un breaking change sin nueva versión = PR bloqueado.</p>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>¿Breaking?</th>
+<th>Cambio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>❌ No</td>
+<td>Agregar endpoint, agregar campo opcional en request, agregar campo en response</td>
+</tr>
+<tr>
+<td>✅ Sí</td>
+<td>Eliminar/renombrar campo o endpoint, cambiar tipo, hacer obligatorio un campo, cambiar códigos de estado o semántica</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3-versionado">3. Versionado</h2>
+<div class="codehilite"><pre><span></span><code>dotnet<span class="w"> </span>add<span class="w"> </span>package<span class="w"> </span>Asp.Versioning.Http
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddApiVersioning</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">DefaultApiVersion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ApiVersion</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">ReportApiVersions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">;</span><span class="w">                       </span><span class="c1">// header api-supported-versions</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">ApiVersionReader</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UrlSegmentApiVersionReader</span><span class="p">();</span>
+<span class="p">}).</span><span class="n">AddApiExplorer</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">GroupNameFormat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"'v'V"</span><span class="p">;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">SubstituteApiVersionInUrl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">;</span><span class="w"> </span><span class="p">});</span>
+
+<span class="kt">var</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">NewVersionedApi</span><span class="p">(</span><span class="s">"Orders"</span><span class="p">);</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">v1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orders</span><span class="p">.</span><span class="n">MapGroup</span><span class="p">(</span><span class="s">"/v{version:apiVersion}/orders"</span><span class="p">).</span><span class="n">HasApiVersion</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">v2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orders</span><span class="p">.</span><span class="n">MapGroup</span><span class="p">(</span><span class="s">"/v{version:apiVersion}/orders"</span><span class="p">).</span><span class="n">HasApiVersion</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+
+<span class="n">v1</span><span class="p">.</span><span class="n">MapGet</span><span class="p">(</span><span class="s">"/{id:guid}"</span><span class="p">,</span><span class="w"> </span><span class="n">GetOrderV1</span><span class="p">.</span><span class="n">Handle</span><span class="p">);</span>
+<span class="n">v2</span><span class="p">.</span><span class="n">MapGet</span><span class="p">(</span><span class="s">"/{id:guid}"</span><span class="p">,</span><span class="w"> </span><span class="n">GetOrderV2</span><span class="p">.</span><span class="n">Handle</span><span class="p">);</span><span class="w">   </span><span class="c1">// nueva forma de respuesta</span>
+</code></pre></div>
+
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Estrategia</th>
+<th>Ejemplo</th>
+<th>Pros / contras</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>URL</td>
+<td><code>/v2/orders</code></td>
+<td>Visible, fácil de enrutar y cachear (la más común)</td>
+</tr>
+<tr>
+<td>Query</td>
+<td><code>/orders?api-version=2</code></td>
+<td>Estilo de las APIs de Azure</td>
+</tr>
+<tr>
+<td>Header</td>
+<td><code>api-version: 2</code></td>
+<td>URLs limpias; menos visible</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Política de deprecación:</strong> anuncia con headers <code>Deprecation</code> y <code>Sunset</code> (RFC 8594), mide quién usa la versión vieja (telemetría por <code>client_id</code>), y retira tras el plazo acordado (ej. 6 meses).</p>
+<hr />
+<h2 id="4-contract-testing">4. Contract testing</h2>
+<ul>
+<li><strong>Proveedor:</strong> tests de integración con <code>WebApplicationFactory</code> que validan respuestas contra el OpenAPI.</li>
+<li><strong>Consumer-driven contracts</strong> con <strong>Pact</strong> (PactNet): cada consumidor publica lo que espera; el pipeline del proveedor verifica que no lo rompe. Muy útil entre microservicios.</li>
+</ul>
+<hr />
+<h2 id="5-azure-api-management-apim">5. Azure API Management (APIM)</h2>
+<p>Gateway + portal + políticas para <strong>todas</strong> las APIs de la organización.</p>
+<div class="diagram-wrapper shadow-sm rounded-3 my-4"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-2 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama de Arquitectura / Flujo</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">Mermaid SVG</span></div><div class="diagram-svg-body"><pre class="mermaid mb-0">flowchart LR
+    C[Consumidores] --&gt; APIM[API Management]
+    APIM --&gt;|policies: auth, rate limit, transform, cache| A1[OrderFlow API]
+    APIM --&gt; A2[Catalog API]
+    APIM --&gt; A3[API legada SOAP]
+    APIM --&gt; P[Developer Portal]
+    APIM -.-&gt; AI[App Insights]</pre></div></div>
+
+<h3 id="politica-de-ejemplo-xml">Política de ejemplo (XML)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">&lt;policies&gt;</span>
+<span class="w">  </span><span class="nt">&lt;inbound&gt;</span>
+<span class="w">    </span><span class="nt">&lt;base</span><span class="w"> </span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;validate-azure-ad-token</span><span class="w"> </span><span class="na">tenant-id=</span><span class="s">"{{tenant-id}}"</span><span class="nt">&gt;</span>
+<span class="w">      </span><span class="nt">&lt;audiences&gt;&lt;audience&gt;</span>api://orderflow-api<span class="nt">&lt;/audience&gt;&lt;/audiences&gt;</span>
+<span class="w">      </span><span class="nt">&lt;required-claims&gt;</span>
+<span class="w">        </span><span class="nt">&lt;claim</span><span class="w"> </span><span class="na">name=</span><span class="s">"scp"</span><span class="w"> </span><span class="na">match=</span><span class="s">"any"</span><span class="w"> </span><span class="na">separator=</span><span class="s">" "</span><span class="nt">&gt;&lt;value&gt;</span>Orders.Read<span class="nt">&lt;/value&gt;&lt;value&gt;</span>Orders.Write<span class="nt">&lt;/value&gt;&lt;/claim&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/required-claims&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/validate-azure-ad-token&gt;</span>
+<span class="w">    </span><span class="nt">&lt;rate-limit-by-key</span><span class="w"> </span><span class="na">calls=</span><span class="s">"100"</span><span class="w"> </span><span class="na">renewal-period=</span><span class="s">"60"</span>
+<span class="w">        </span><span class="na">counter-key=</span><span class="s">"@(context.Request.Headers.GetValueOrDefault("</span><span class="err">Authorization","").AsJwt()?.Subject)"</span><span class="w"> </span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;set-header</span><span class="w"> </span><span class="na">name=</span><span class="s">"X-Forwarded-By"</span><span class="w"> </span><span class="na">exists-action=</span><span class="s">"override"</span><span class="nt">&gt;&lt;value&gt;</span>apim<span class="nt">&lt;/value&gt;&lt;/set-header&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/inbound&gt;</span>
+<span class="w">  </span><span class="nt">&lt;backend&gt;&lt;base</span><span class="w"> </span><span class="nt">/&gt;&lt;/backend&gt;</span>
+<span class="w">  </span><span class="nt">&lt;outbound&gt;</span>
+<span class="w">    </span><span class="nt">&lt;base</span><span class="w"> </span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;set-header</span><span class="w"> </span><span class="na">name=</span><span class="s">"X-Powered-By"</span><span class="w"> </span><span class="na">exists-action=</span><span class="s">"delete"</span><span class="w"> </span><span class="nt">/&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/outbound&gt;</span>
+<span class="w">  </span><span class="nt">&lt;on-error&gt;&lt;base</span><span class="w"> </span><span class="nt">/&gt;&lt;/on-error&gt;</span>
+<span class="nt">&lt;/policies&gt;</span>
+</code></pre></div>
+
+<p>Capacidades clave: productos y suscripciones, versionado y revisiones, transformación (SOAP→REST), caché, mock de respuestas, <strong>AI gateway</strong> (límites de tokens para APIs de LLM), workspaces por equipo (gobierno federado).</p>
+<h3 id="azure-api-center">Azure API Center</h3>
+<p>Inventario central de <strong>todas</strong> las APIs (incluso las que no pasan por APIM), con metadatos, dueños, ciclo de vida y <strong>linting automático</strong> de especificaciones. Es la pieza de "gobernanza" del ecosistema de APIs.</p>
+<h3 id="apiops">APIOps</h3>
+<p>Gestiona la configuración de APIM como código (extraer/publicar con pipelines). Microsoft publica el toolkit <em>APIOps</em> para Azure DevOps y GitHub.</p>
+<h2 id="checklist">✅ Checklist</h2>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Tengo (o adopté) una guía de estilo de API.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">El contrato OpenAPI se genera en build y se versiona.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">El pipeline hace lint (Spectral) y detecta breaking changes (oasdiff).</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Sé versionar con <code>Asp.Versioning</code> y deprecar con <code>Sunset</code>.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Entiendo el rol de APIM y API Center.</li>
+</ul>
+<h2 id="ejercicio-orderflow">🏋️ Ejercicio (OrderFlow)</h2>
+<ol>
+<li>Escribe la guía de estilo de OrderFlow (1 página) en <code>docs/</code>.</li>
+<li>Genera OpenAPI en build hacia <code>contracts/</code>; agrega Spectral y oasdiff al pipeline.</li>
+<li>Crea <code>v2</code> de <code>GET /orders/{id}</code> con un cambio incompatible y deprecia <code>v1</code>.</li>
+<li>(Opcional) Publica la API en APIM (tier Developer/Basic v2) con validación de token y rate limit.</li>
+</ol>
+<h2 id="profundiza">📚 Profundiza</h2>
+<ul>
+<li><a href="https://github.com/microsoft/api-guidelines" target="_blank" rel="noopener noreferrer">Microsoft REST API Guidelines</a>.</li>
+<li><a href="https://learn.microsoft.com/aspnet/core/fundamentals/openapi/overview" target="_blank" rel="noopener noreferrer">OpenAPI in ASP.NET Core</a>.</li>
+<li><a href="https://learn.microsoft.com/azure/api-management/" target="_blank" rel="noopener noreferrer">Azure API Management</a> · <a href="https://learn.microsoft.com/azure/api-center/" target="_blank" rel="noopener noreferrer">Azure API Center</a>.</li>
+</ul>
+      </article>
+
+      <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+        <a href="01-gobernanza-codigo-arquitectura.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>&larr; 4.1 Gobernanza de código y arquitectura</span></a>
+<a href="03-gobernanza-azure.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>4.3 Gobernanza en Azure &rarr;</span></a>
+      </div>
+
+      <footer class="text-center text-muted small mt-5 pt-3 border-top">
+        mejorar.dev &middot; Plan de crecimiento para desarrolladores .NET &middot; Bootstrap 5 + Mermaid.js
+      </footer>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const toggleBtn = document.getElementById('sidebarToggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+          document.body.classList.toggle('sidebar-collapsed');
+        });
+      }
+
+      const currentPath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/').toLowerCase();
+      const sidebarLinks = document.querySelectorAll('#sidebarNav a.sidebar-link');
+      let matchedLink = null;
+
+      sidebarLinks.forEach(function (link) {
+        try {
+          const resolved = new URL(link.getAttribute('href'), window.location.href);
+          const linkPath = decodeURIComponent(resolved.pathname).replace(/\\/g, '/').toLowerCase();
+          if (currentPath && linkPath === currentPath) {
+            matchedLink = link;
+          }
+        } catch (e) {}
+      });
+
+      if (matchedLink) {
+        sidebarLinks.forEach(function (l) { l.classList.remove('active'); });
+        matchedLink.classList.add('active');
+        matchedLink.setAttribute('aria-current', 'page');
+        const parentCollapse = matchedLink.closest('.collapse');
+        if (parentCollapse && !parentCollapse.classList.contains('show')) {
+          parentCollapse.classList.add('show');
+        }
+        matchedLink.scrollIntoView({ block: 'nearest' });
+      } else {
+        const presetActive = document.querySelector('#sidebarNav a.sidebar-link.active');
+        if (presetActive) {
+          presetActive.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      const filterInput = document.getElementById('sidebarFilter');
+      if (filterInput) {
+        filterInput.addEventListener('input', function () {
+          const query = this.value.trim().toLowerCase();
+          const groups = document.querySelectorAll('.sidebar-group');
+          groups.forEach(function (group) {
+            const items = group.querySelectorAll('.nav-item');
+            let visibleCount = 0;
+            items.forEach(function (item) {
+              const text = item.textContent.toLowerCase();
+              const match = !query || text.includes(query);
+              item.style.display = match ? '' : 'none';
+              if (match) visibleCount++;
+            });
+            group.style.display = visibleCount > 0 ? '' : 'none';
+            if (query && visibleCount > 0) {
+              const collapseEl = group.querySelector('.collapse');
+              if (collapseEl) collapseEl.classList.add('show');
+            }
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2.4 Resiliencia — mejorar.dev (.NET &amp; Cloud Architecture)</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <style>
+    :root {
+      --sidebar-width: 310px;
+      --navbar-height: 58px;
+      --brand-primary: #6366f1;
+      --brand-dark: #0f172a;
+      --bg-soft: #f8fafc;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-soft);
+      color: #1e293b;
+      padding-top: var(--navbar-height);
+      line-height: 1.65;
+    }
+
+    .doc-navbar {
+      height: var(--navbar-height);
+      background-color: var(--brand-dark);
+      z-index: 1040;
+    }
+
+    .doc-sidebar {
+      position: fixed;
+      top: var(--navbar-height);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      overflow-y: auto;
+      background-color: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      z-index: 1030;
+      transition: transform 0.25s ease, width 0.25s ease;
+    }
+
+    body.sidebar-collapsed .doc-sidebar {
+      transform: translateX(-100%);
+    }
+
+    .doc-main {
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.25s ease;
+      min-height: calc(100vh - var(--navbar-height));
+    }
+
+    body.sidebar-collapsed .doc-main {
+      margin-left: 0;
+    }
+
+    .btn-toggle {
+      color: #334155;
+      background-color: #f1f5f9;
+      border: none;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-toggle:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-toggle.group-active {
+      background-color: #eef2ff;
+      color: #4338ca;
+    }
+
+    .sidebar-link {
+      color: #475569;
+      font-size: 0.86rem;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-link:hover {
+      color: var(--brand-primary);
+      background-color: #f1f5f9;
+    }
+
+    .sidebar-link.active {
+      color: #4f46e5 !important;
+      background-color: #eef2ff !important;
+      border-left-color: #4f46e5;
+      font-weight: 600;
+    }
+
+    .doc-content-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+    }
+
+    .doc-body h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-body h2 {
+      font-size: 1.45rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 2.2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #f1f5f9;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 1.6rem;
+      margin-bottom: 0.75rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h4, .doc-body h5, .doc-body h6 {
+      font-weight: 600;
+      color: #475569;
+      margin-top: 1.25rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-blockquote {
+      border-left: 4px solid #6366f1;
+      background-color: #f8fafc;
+      padding: 0.9rem 1.15rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+      font-size: 0.95rem;
+      color: #334155;
+    }
+
+    .doc-blockquote p:last-child {
+      margin-bottom: 0;
+    }
+
+    .codehilite {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 0.9rem 1rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .codehilite pre, pre {
+      margin: 0;
+      font-family: 'Cascadia Mono', 'Consolas', 'SFMono-Regular', Menlo, Monaco, monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .diagram-wrapper {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      overflow: hidden;
+    }
+
+    .diagram-header {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      border-color: #334155 !important;
+    }
+
+    .diagram-svg-body {
+      padding: 1.25rem 1rem;
+      overflow-x: auto;
+      text-align: center;
+      background-color: #ffffff;
+    }
+
+    code {
+      font-family: 'Cascadia Mono', 'Consolas', monospace;
+      font-size: 0.875em;
+      color: #0f172a;
+      background-color: #f1f5f9;
+      padding: 0.15em 0.38em;
+      border-radius: 0.25rem;
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    .task-list-item {
+      list-style-type: none;
+      margin-left: -1.25rem;
+    }
+
+    .toc-card ul {
+      margin-bottom: 0;
+      padding-left: 1.2rem;
+      font-size: 0.88rem;
+    }
+
+    .toc-card a {
+      text-decoration: none;
+      color: #334155;
+    }
+
+    .toc-card a:hover {
+      color: #4f46e5;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 991.98px) {
+      .doc-sidebar {
+        position: relative;
+        top: 0;
+        width: 100%;
+        max-height: 420px;
+        border-right: none;
+        border-bottom: 1px solid #cbd5e1;
+        transform: none !important;
+      }
+
+      body.sidebar-collapsed .doc-sidebar {
+        display: none;
+      }
+
+      .doc-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-dark doc-navbar fixed-top shadow-sm px-3">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-light btn-sm d-flex align-items-center gap-1" id="sidebarToggle" type="button" title="Ocultar o mostrar barra lateral" aria-label="Alternar barra lateral">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+          <span class="d-none d-sm-inline small">Menú</span>
+        </button>
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2 mb-0 ms-1" href="../README.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#818cf8" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09z"/>
+          </svg>
+          <span>mejorar.dev · .NET &amp; Cloud</span>
+        </a>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="../../../index.html" class="btn btn-sm btn-outline-light d-none d-lg-inline-block">&larr; Portal</a>
+        <a href="../00-plan-de-estudio.html" class="btn btn-sm btn-outline-info d-none d-md-inline-block">Plan 27 semanas</a>
+        <a href="../01-glosario.html" class="btn btn-sm btn-outline-warning d-none d-md-inline-block">Glosario</a>
+        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">modulo-02-arquitectura/04-resiliencia.html</span>
+      </div>
+    </div>
+  </nav>
+
+  <aside class="doc-sidebar shadow-sm p-3" id="docSidebar" aria-label="Navegación de documentación">
+    <div class="mb-3">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-light border-end-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+        </span>
+        <input type="search" id="sidebarFilter" class="form-control bg-light border-start-0" placeholder="Filtrar módulos..." aria-label="Filtrar módulos">
+      </div>
+    </div>
+    <nav id="sidebarNav">
+      <div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-section-0" aria-expanded="true" aria-controls="submenu-section-0"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>Inicio / Raíz</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-section-0">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../README.html" title="README.html"><span class="d-block text-truncate">🚀 mejorar.dev — Plan de crecimiento para desarrolladores .NET</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../00-plan-de-estudio.html" title="00-plan-de-estudio.html"><span class="d-block text-truncate">📅 Plan de estudio — 27 semanas</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-glosario.html" title="01-glosario.html"><span class="d-block text-truncate">📖 Glosario</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../recursos.html" title="recursos.html"><span class="d-block text-truncate">📚 Recursos recomendados</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-01-patrones-diseno-1" aria-expanded="true" aria-controls="submenu-modulo-01-patrones-diseno-1"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>01 · Patrones de Diseño</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">5</span></button>
+<div class="collapse show" id="submenu-modulo-01-patrones-diseno-1">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/01-fundamentos-solid.html" title="modulo-01-patrones-diseno/01-fundamentos-solid.html"><span class="d-block text-truncate">1.1 Fundamentos: SOLID, DRY, KISS, YAGNI y composición</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/02-patrones-creacionales.html" title="modulo-01-patrones-diseno/02-patrones-creacionales.html"><span class="d-block text-truncate">1.2 Patrones creacionales (Creational Patterns)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/03-patrones-estructurales.html" title="modulo-01-patrones-diseno/03-patrones-estructurales.html"><span class="d-block text-truncate">1.3 Patrones estructurales (Structural Patterns)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/04-patrones-comportamiento.html" title="modulo-01-patrones-diseno/04-patrones-comportamiento.html"><span class="d-block text-truncate">1.4 Patrones de comportamiento (Behavioral Patterns)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-01-patrones-diseno/05-patrones-empresariales.html" title="modulo-01-patrones-diseno/05-patrones-empresariales.html"><span class="d-block text-truncate">1.5 Patrones empresariales en .NET</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold group-active" type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-02-arquitectura-2" aria-expanded="true" aria-controls="submenu-modulo-02-arquitectura-2"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>02 · Arquitectura</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">5</span></button>
+<div class="collapse show" id="submenu-modulo-02-arquitectura-2">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="01-estilos-arquitectonicos.html" title="modulo-02-arquitectura/01-estilos-arquitectonicos.html"><span class="d-block text-truncate">2.1 Estilos arquitectónicos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="02-domain-driven-design.html" title="modulo-02-arquitectura/02-domain-driven-design.html"><span class="d-block text-truncate">2.2 Domain-Driven Design (DDD) práctico</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="03-escalabilidad.html" title="modulo-02-arquitectura/03-escalabilidad.html"><span class="d-block text-truncate">2.3 Escalabilidad</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link active py-1 px-3 rounded-2" href="04-resiliencia.html" aria-current="page" title="modulo-02-arquitectura/04-resiliencia.html"><span class="d-block text-truncate">2.4 Resiliencia</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="05-cloud-native-aspire.html" title="modulo-02-arquitectura/05-cloud-native-aspire.html"><span class="d-block text-truncate">2.5 Cloud-native con Aspire y contenedores</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-07-redes-3" aria-expanded="true" aria-controls="submenu-modulo-07-redes-3"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>07 · Redes (Networking)</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-07-redes-3">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/01-fundamentos-redes.html" title="modulo-07-redes/01-fundamentos-redes.html"><span class="d-block text-truncate">7.1 Fundamentos de redes para ingenieros de software</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/02-http-tls-dns.html" title="modulo-07-redes/02-http-tls-dns.html"><span class="d-block text-truncate">7.2 HTTP, TLS y DNS en profundidad</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/03-redes-en-dotnet.html" title="modulo-07-redes/03-redes-en-dotnet.html"><span class="d-block text-truncate">7.3 Redes desde .NET: HttpClient, conexiones, gRPC y troubleshooting</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-07-redes/04-redes-en-azure.html" title="modulo-07-redes/04-redes-en-azure.html"><span class="d-block text-truncate">7.4 Redes en Azure</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-03-observabilidad-4" aria-expanded="true" aria-controls="submenu-modulo-03-observabilidad-4"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>03 · Observabilidad</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-03-observabilidad-4">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-03-observabilidad/01-fundamentos.html" title="modulo-03-observabilidad/01-fundamentos.html"><span class="d-block text-truncate">3.1 Fundamentos de observabilidad</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-03-observabilidad/02-logging-estructurado.html" title="modulo-03-observabilidad/02-logging-estructurado.html"><span class="d-block text-truncate">3.2 Logging estructurado en .NET</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-03-observabilidad/03-opentelemetry-dotnet.html" title="modulo-03-observabilidad/03-opentelemetry-dotnet.html"><span class="d-block text-truncate">3.3 OpenTelemetry en .NET</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-03-observabilidad/04-health-checks-azure-monitor.html" title="modulo-03-observabilidad/04-health-checks-azure-monitor.html"><span class="d-block text-truncate">3.4 Health checks, Azure Monitor y alertas</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-04-gobernabilidad-5" aria-expanded="true" aria-controls="submenu-modulo-04-gobernabilidad-5"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>04 · Gobernabilidad</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-modulo-04-gobernabilidad-5">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-04-gobernabilidad/01-gobernanza-codigo-arquitectura.html" title="modulo-04-gobernabilidad/01-gobernanza-codigo-arquitectura.html"><span class="d-block text-truncate">4.1 Gobernanza de código y arquitectura</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-04-gobernabilidad/02-gobernanza-apis.html" title="modulo-04-gobernabilidad/02-gobernanza-apis.html"><span class="d-block text-truncate">4.2 Gobernanza de APIs</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-04-gobernabilidad/03-gobernanza-azure.html" title="modulo-04-gobernabilidad/03-gobernanza-azure.html"><span class="d-block text-truncate">4.3 Gobernanza en Azure</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-05-cicd-azure-devops-6" aria-expanded="true" aria-controls="submenu-modulo-05-cicd-azure-devops-6"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>05 · CI/CD Azure DevOps</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-05-cicd-azure-devops-6">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/01-fundamentos-pipelines-yaml.html" title="modulo-05-cicd-azure-devops/01-fundamentos-pipelines-yaml.html"><span class="d-block text-truncate">5.1 Fundamentos de Azure Pipelines en YAML</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/02-templates-reutilizacion.html" title="modulo-05-cicd-azure-devops/02-templates-reutilizacion.html"><span class="d-block text-truncate">5.2 Templates y reutilización en Azure Pipelines</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/03-seguridad-environments.html" title="modulo-05-cicd-azure-devops/03-seguridad-environments.html"><span class="d-block text-truncate">5.3 Seguridad del pipeline: environments, approvals, secretos y Workload Identity Federation</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-05-cicd-azure-devops/04-iac-bicep-despliegues.html" title="modulo-05-cicd-azure-devops/04-iac-bicep-despliegues.html"><span class="d-block text-truncate">5.4 Infraestructura como código (Bicep) y estrategias de despliegue</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-modulo-06-microsoft-entra-7" aria-expanded="true" aria-controls="submenu-modulo-06-microsoft-entra-7"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>06 · Microsoft Entra</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">4</span></button>
+<div class="collapse show" id="submenu-modulo-06-microsoft-entra-7">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/01-fundamentos-identidad.html" title="modulo-06-microsoft-entra/01-fundamentos-identidad.html"><span class="d-block text-truncate">6.1 Fundamentos de identidad: OAuth 2.0, OpenID Connect y tokens</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/02-app-registrations-identity-web.html" title="modulo-06-microsoft-entra/02-app-registrations-identity-web.html"><span class="d-block text-truncate">6.2 App registrations y Microsoft.Identity.Web</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/03-managed-identities-rbac.html" title="modulo-06-microsoft-entra/03-managed-identities-rbac.html"><span class="d-block text-truncate">6.3 Managed Identities y Azure RBAC</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../modulo-06-microsoft-entra/04-seguridad-avanzada.html" title="modulo-06-microsoft-entra/04-seguridad-avanzada.html"><span class="d-block text-truncate">6.4 Seguridad avanzada: Conditional Access, PIM, External ID y Workload ID</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-proyecto-integrador-8" aria-expanded="true" aria-controls="submenu-proyecto-integrador-8"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>Proyecto Integrador</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">1</span></button>
+<div class="collapse show" id="submenu-proyecto-integrador-8">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../proyecto-integrador/README.html" title="proyecto-integrador/README.html"><span class="d-block text-truncate">🛒 Proyecto integrador: OrderFlow</span></a></li>
+</ul>
+</div>
+</div>
+    </nav>
+  </aside>
+
+  <main class="doc-main p-3 p-md-4 p-lg-5">
+    <div class="container-xxl">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-white px-3 py-2 rounded-3 shadow-sm border mb-0 small">
+          <li class="breadcrumb-item"><a href="../../../index.html" class="text-decoration-none">Portal</a></li>
+<li class="breadcrumb-item"><a href="../README.html" class="text-decoration-none">mejorar.dev</a></li>
+<li class="breadcrumb-item text-muted">modulo-02-arquitectura</li>
+<li class="breadcrumb-item active fw-semibold" aria-current="page">04-resiliencia.html</li>
+        </ol>
+      </nav>
+
+      
+        <div class="card border-0 shadow-sm mb-4 toc-card">
+          <div class="card-body py-2 px-3">
+            <button class="btn btn-sm btn-link text-decoration-none text-dark fw-semibold p-0 d-flex align-items-center gap-2 w-100 justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#pageTocCollapse" aria-expanded="false" aria-controls="pageTocCollapse">
+              <span class="d-flex align-items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                </svg>
+                Contenido de esta página
+              </span>
+              <span class="small text-muted">Mostrar / Ocultar</span>
+            </button>
+            <div class="collapse mt-2" id="pageTocCollapse">
+              <div class="toc">
+<ul>
+<li><a href="#24-resiliencia">2.4 Resiliencia</a><ul>
+<li><a href="#objetivos">🎯 Objetivos</a></li>
+<li><a href="#las-8-falacias-de-la-computacion-distribuida">🧠 Las 8 falacias de la computación distribuida</a></li>
+<li><a href="#1-las-estrategias-de-resiliencia">1. Las estrategias de resiliencia</a></li>
+<li><a href="#2-resiliencia-http-en-net-la-forma-recomendada">2. Resiliencia HTTP en .NET (la forma recomendada)</a><ul>
+<li><a href="#standard-resilience-handler-una-linea-buenas-practicas-incluidas">Standard resilience handler (una línea, buenas prácticas incluidas)</a></li>
+<li><a href="#personalizarlo">Personalizarlo</a></li>
+<li><a href="#hedging-para-lecturas-sensibles-a-latencia">Hedging (para lecturas sensibles a latencia)</a></li>
+<li><a href="#resiliencia-fuera-de-http-polly-v8-pipelines">Resiliencia fuera de HTTP (Polly v8 pipelines)</a></li>
+</ul>
+</li>
+<li><a href="#3-idempotencia">3. Idempotencia ⭐</a><ul>
+<li><a href="#idempotency-key-en-la-api">Idempotency-Key en la API</a></li>
+<li><a href="#consumidor-idempotente-inbox-deduplicacion">Consumidor idempotente (inbox / deduplicación)</a></li>
+</ul>
+</li>
+<li><a href="#4-outbox-pattern">4. Outbox pattern ⭐</a><ul>
+<li><a href="#el-problema-del-dual-write">El problema del "dual write"</a></li>
+<li><a href="#la-solucion">La solución</a></li>
+</ul>
+</li>
+<li><a href="#5-sagas-transacciones-distribuidas">5. Sagas (transacciones distribuidas)</a></li>
+<li><a href="#6-degradacion-elegante-y-otros-patrones">6. Degradación elegante y otros patrones</a></li>
+<li><a href="#antipatrones">⚠️ Antipatrones</a></li>
+<li><a href="#checklist">✅ Checklist</a></li>
+<li><a href="#ejercicio-orderflow">🏋️ Ejercicio (OrderFlow)</a></li>
+<li><a href="#profundiza">📚 Profundiza</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+            </div>
+          </div>
+        </div>
+        
+
+      <article class="doc-content-card shadow-sm p-4 p-md-5 doc-body">
+        <h1 id="24-resiliencia">2.4 Resiliencia</h1>
+<p><a href="03-escalabilidad.html">⬅ Anterior: Escalabilidad</a> · <a href="../README.html">Índice</a> · <a href="05-cloud-native-aspire.html">Siguiente: Cloud-native con Aspire ➡</a></p>
+<h2 id="objetivos">🎯 Objetivos</h2>
+<ul>
+<li>Diseñar asumiendo que <strong>todo falla</strong> (red, BD, APIs externas).</li>
+<li>Aplicar timeouts, retries, circuit breakers y hedging con <code>Microsoft.Extensions.Http.Resilience</code> (Polly v8).</li>
+<li>Garantizar consistencia con idempotencia, Outbox y Sagas.</li>
+</ul>
+<hr />
+<h2 id="las-8-falacias-de-la-computacion-distribuida">🧠 Las 8 falacias de la computación distribuida</h2>
+<ol>
+<li>La red es confiable. 2. La latencia es cero. 3. El ancho de banda es infinito. 4. La red es segura. 5. La topología no cambia. 6. Hay un solo administrador. 7. El costo de transporte es cero. 8. La red es homogénea.</li>
+</ol>
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>Cada llamada remota puede: tardar mucho, fallar, o <strong>tener éxito pero no enterarte</strong> (timeout después de que el servidor procesó). Diseña para los tres casos.</p>
+</blockquote>
+<hr />
+<h2 id="1-las-estrategias-de-resiliencia">1. Las estrategias de resiliencia</h2>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Estrategia</th>
+<th>Protege contra</th>
+<th>Regla práctica</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Timeout</strong></td>
+<td>Esperas infinitas</td>
+<td><strong>Siempre</strong>. Sin timeout no hay resiliencia.</td>
+</tr>
+<tr>
+<td><strong>Retry</strong> (backoff exponencial + jitter)</td>
+<td>Fallos transitorios (503, 429, timeouts)</td>
+<td>Solo si la operación es <strong>idempotente</strong></td>
+</tr>
+<tr>
+<td><strong>Circuit Breaker</strong></td>
+<td>Martillar un servicio caído</td>
+<td>Abre tras X % de fallos; prueba de nuevo tras un tiempo</td>
+</tr>
+<tr>
+<td><strong>Rate limiter / Bulkhead</strong></td>
+<td>Agotar recursos propios</td>
+<td>Limita concurrencia hacia una dependencia</td>
+</tr>
+<tr>
+<td><strong>Hedging</strong></td>
+<td>Latencia de cola (p99)</td>
+<td>Lanza una segunda petición si la primera tarda</td>
+</tr>
+<tr>
+<td><strong>Fallback</strong></td>
+<td>Dependencia no disponible</td>
+<td>Respuesta degradada (caché, valor por defecto)</td>
+</tr>
+</tbody>
+</table></div>
+<div class="diagram-wrapper shadow-sm rounded-3 my-4"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-2 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama de Arquitectura / Flujo</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">Mermaid SVG</span></div><div class="diagram-svg-body"><pre class="mermaid mb-0">stateDiagram-v2
+    [*] --&gt; Closed
+    Closed --&gt; Open: fallos &gt; umbral
+    Open --&gt; HalfOpen: tras break duration
+    HalfOpen --&gt; Closed: petición de prueba OK
+    HalfOpen --&gt; Open: petición de prueba falla</pre></div></div>
+
+<hr />
+<h2 id="2-resiliencia-http-en-net-la-forma-recomendada">2. Resiliencia HTTP en .NET (la forma recomendada)</h2>
+<h3 id="standard-resilience-handler-una-linea-buenas-practicas-incluidas">Standard resilience handler (una línea, buenas prácticas incluidas)</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddHttpClient</span><span class="o">&lt;</span><span class="n">IPaymentsApi</span><span class="p">,</span><span class="w"> </span><span class="n">PaymentsApi</span><span class="o">&gt;</span><span class="p">(</span><span class="n">c</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">        </span><span class="n">c</span><span class="p">.</span><span class="n">BaseAddress</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Uri</span><span class="p">(</span><span class="n">builder</span><span class="p">.</span><span class="n">Configuration</span><span class="p">[</span><span class="s">"Payments:BaseUrl"</span><span class="p">]</span><span class="o">!</span><span class="p">))</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddStandardResilienceHandler</span><span class="p">();</span>
+</code></pre></div>
+
+<p>Incluye, en este orden: rate limiter → timeout total → retry → circuit breaker → timeout por intento.</p>
+<h3 id="personalizarlo">Personalizarlo</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddHttpClient</span><span class="o">&lt;</span><span class="n">IPaymentsApi</span><span class="p">,</span><span class="w"> </span><span class="n">PaymentsApi</span><span class="o">&gt;</span><span class="p">(...)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddStandardResilienceHandler</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">AttemptTimeout</span><span class="p">.</span><span class="n">Timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+<span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">TotalRequestTimeout</span><span class="p">.</span><span class="n">Timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">15</span><span class="p">);</span>
+<span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">Retry</span><span class="p">.</span><span class="n">MaxRetryAttempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+<span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">Retry</span><span class="p">.</span><span class="n">UseJitter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">;</span>
+<span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">Retry</span><span class="p">.</span><span class="n">DisableForUnsafeHttpMethods</span><span class="p">();</span><span class="w"> </span><span class="c1">// no reintenta POST/PUT/DELETE/PATCH automáticamente</span>
+<span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">CircuitBreaker</span><span class="p">.</span><span class="n">FailureRatio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.5</span><span class="p">;</span>
+<span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">CircuitBreaker</span><span class="p">.</span><span class="n">SamplingDuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">30</span><span class="p">);</span>
+<span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">CircuitBreaker</span><span class="p">.</span><span class="n">BreakDuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">15</span><span class="p">);</span>
+<span class="w">    </span><span class="p">});</span>
+</code></pre></div>
+
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>⚠️ <code>DisableForUnsafeHttpMethods()</code> es clave: reintentar un <code>POST /charges</code> sin idempotencia puede <strong>cobrar dos veces</strong>.</p>
+</blockquote>
+<h3 id="hedging-para-lecturas-sensibles-a-latencia">Hedging (para lecturas sensibles a latencia)</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddHttpClient</span><span class="o">&lt;</span><span class="n">ICatalogApi</span><span class="p">,</span><span class="w"> </span><span class="n">CatalogApi</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddStandardHedgingHandler</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">Hedging</span><span class="p">.</span><span class="n">MaxHedgedAttempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+</code></pre></div>
+
+<h3 id="resiliencia-fuera-de-http-polly-v8-pipelines">Resiliencia fuera de HTTP (Polly v8 pipelines)</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddResiliencePipeline</span><span class="p">(</span><span class="s">"db-retry"</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">p</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddRetry</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">RetryStrategyOptions</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">ShouldHandle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">PredicateBuilder</span><span class="p">().</span><span class="n">Handle</span><span class="o">&lt;</span><span class="n">SqlException</span><span class="o">&gt;</span><span class="p">(</span><span class="n">ex</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="n">IsTransient</span><span class="p">),</span>
+<span class="w">        </span><span class="n">MaxRetryAttempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">        </span><span class="n">BackoffType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DelayBackoffType</span><span class="p">.</span><span class="n">Exponential</span><span class="p">,</span>
+<span class="w">        </span><span class="n">UseJitter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span>
+<span class="w">    </span><span class="p">})</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddTimeout</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">5</span><span class="p">)));</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">ReportService</span><span class="p">(</span><span class="n">ResiliencePipelineProvider</span><span class="o">&lt;</span><span class="kt">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pipelines</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="n">Report</span><span class="o">&gt;</span><span class="w"> </span><span class="n">BuildAsync</span><span class="p">(</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">pipeline</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pipelines</span><span class="p">.</span><span class="n">GetPipeline</span><span class="p">(</span><span class="s">"db-retry"</span><span class="p">);</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">pipeline</span><span class="p">.</span><span class="n">ExecuteAsync</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="n">token</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">LoadAsync</span><span class="p">(</span><span class="n">token</span><span class="p">),</span><span class="w"> </span><span class="n">ct</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>EF Core ya trae retry para SQL Server: <code>UseSqlServer(cs, o =&gt; o.EnableRetryOnFailure())</code>. Ojo: no es compatible con transacciones iniciadas manualmente sin <code>CreateExecutionStrategy()</code>.</p>
+</blockquote>
+<hr />
+<h2 id="3-idempotencia">3. Idempotencia ⭐</h2>
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>Una operación es idempotente si ejecutarla N veces produce el mismo resultado que 1 vez.</p>
+</blockquote>
+<p><code>GET</code>, <code>PUT</code>, <code>DELETE</code> deberían serlo por diseño. <code>POST</code> normalmente <strong>no</strong>. Con mensajería <em>at-least-once</em>, <strong>todos</strong> tus consumidores deben ser idempotentes.</p>
+<h3 id="idempotency-key-en-la-api">Idempotency-Key en la API</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">app</span><span class="p">.</span><span class="n">MapPost</span><span class="p">(</span><span class="s">"/payments"</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="na">[FromHeader(Name = "Idempotency-Key")]</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">key</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ChargeRequest</span><span class="w"> </span><span class="n">req</span><span class="p">,</span><span class="w"> </span><span class="n">PaymentsDbContext</span><span class="w"> </span><span class="n">db</span><span class="p">,</span><span class="w"> </span><span class="n">IPaymentGateway</span><span class="w"> </span><span class="n">gateway</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="kt">string</span><span class="p">.</span><span class="n">IsNullOrWhiteSpace</span><span class="p">(</span><span class="n">key</span><span class="p">))</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">Results</span><span class="p">.</span><span class="n">BadRequest</span><span class="p">(</span><span class="s">"Idempotency-Key requerido"</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">existing</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">IdempotencyRecords</span><span class="p">.</span><span class="n">FindAsync</span><span class="p">([</span><span class="n">key</span><span class="p">],</span><span class="w"> </span><span class="n">ct</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">existing</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="k">not</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">Results</span><span class="p">.</span><span class="n">Json</span><span class="p">(</span><span class="n">existing</span><span class="p">.</span><span class="n">ResponseBody</span><span class="p">,</span><span class="w"> </span><span class="n">statusCode</span><span class="p">:</span><span class="w"> </span><span class="n">existing</span><span class="p">.</span><span class="n">StatusCode</span><span class="p">);</span><span class="w"> </span><span class="c1">// misma respuesta</span>
+
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">gateway</span><span class="p">.</span><span class="n">ChargeAsync</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">Amount</span><span class="p">,</span><span class="w"> </span><span class="n">idempotencyKey</span><span class="p">:</span><span class="w"> </span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="n">ct</span><span class="p">);</span><span class="w"> </span><span class="c1">// propaga la key al proveedor</span>
+<span class="w">    </span><span class="n">db</span><span class="p">.</span><span class="n">IdempotencyRecords</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="k">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="mi">201</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">));</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">SaveChangesAsync</span><span class="p">(</span><span class="n">ct</span><span class="p">);</span><span class="w"> </span><span class="c1">// PK única sobre key → si hay carrera, una falla con conflicto</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Results</span><span class="p">.</span><span class="n">Created</span><span class="p">(</span><span class="s">$"/payments/{result.Id}"</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">);</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="consumidor-idempotente-inbox-deduplicacion">Consumidor idempotente (inbox / deduplicación)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">HandleAsync</span><span class="p">(</span><span class="n">OrderPlacedIntegrationEvent</span><span class="w"> </span><span class="n">evt</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">await</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">ProcessedMessages</span><span class="p">.</span><span class="n">AnyAsync</span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">MessageId</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">evt</span><span class="p">.</span><span class="n">EventId</span><span class="p">,</span><span class="w"> </span><span class="n">ct</span><span class="p">))</span>
+<span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w"> </span><span class="c1">// ya procesado</span>
+
+<span class="w">    </span><span class="n">db</span><span class="p">.</span><span class="n">Invoices</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">Invoice</span><span class="p">.</span><span class="n">For</span><span class="p">(</span><span class="n">evt</span><span class="p">.</span><span class="n">OrderId</span><span class="p">,</span><span class="w"> </span><span class="n">evt</span><span class="p">.</span><span class="n">Amount</span><span class="p">));</span>
+<span class="w">    </span><span class="n">db</span><span class="p">.</span><span class="n">ProcessedMessages</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ProcessedMessage</span><span class="p">(</span><span class="n">evt</span><span class="p">.</span><span class="n">EventId</span><span class="p">,</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="p">.</span><span class="n">UtcNow</span><span class="p">));</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">SaveChangesAsync</span><span class="p">(</span><span class="n">ct</span><span class="p">);</span><span class="w"> </span><span class="c1">// ambos en la misma transacción</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-outbox-pattern">4. Outbox pattern ⭐</h2>
+<h3 id="el-problema-del-dual-write">El problema del "dual write"</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">await</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">SaveChangesAsync</span><span class="p">();</span><span class="w">          </span><span class="c1">// ✅ guardado</span>
+<span class="k">await</span><span class="w"> </span><span class="n">bus</span><span class="p">.</span><span class="n">PublishAsync</span><span class="p">(</span><span class="n">orderPlaced</span><span class="p">);</span><span class="w">  </span><span class="c1">// 💥 falla → el pedido existe pero nadie se entera</span>
+</code></pre></div>
+
+<p>Si inviertes el orden, puedes publicar un evento de algo que nunca se guardó.</p>
+<h3 id="la-solucion">La solución</h3>
+<ol>
+<li>En la <strong>misma transacción</strong> guardas el pedido y una fila en la tabla <code>OutboxMessages</code>.</li>
+<li>Un proceso en segundo plano lee el outbox y publica al broker, marcando como enviado.</li>
+</ol>
+<div class="diagram-wrapper shadow-sm rounded-3 my-4"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-2 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama de Arquitectura / Flujo</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">Mermaid SVG</span></div><div class="diagram-svg-body"><pre class="mermaid mb-0">flowchart LR
+    H[Handler] --&gt;|1 transacción| DB[(Orders + OutboxMessages)]
+    W[Outbox Processor] --&gt;|lee pendientes| DB
+    W --&gt;|publica| SB[Service Bus]
+    W --&gt;|marca ProcessedAt| DB</pre></div></div>
+
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">OutboxMessage</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Guid</span><span class="w"> </span><span class="n">Id</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Guid</span><span class="p">.</span><span class="n">CreateVersion7</span><span class="p">();</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">Type</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">required</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">Payload</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="w"> </span><span class="n">OccurredAt</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">init</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="o">?</span><span class="w"> </span><span class="n">ProcessedAt</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">string?</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Interceptor: convierte domain events en mensajes de outbox ANTES de guardar</span>
+<span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">OutboxInterceptor</span><span class="p">(</span><span class="n">TimeProvider</span><span class="w"> </span><span class="n">clock</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">SaveChangesInterceptor</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="n">ValueTask</span><span class="o">&lt;</span><span class="n">InterceptionResult</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">SavingChangesAsync</span><span class="p">(</span>
+<span class="w">        </span><span class="n">DbContextEventData</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">InterceptionResult</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">result</span><span class="p">,</span><span class="w"> </span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">ctx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">Context</span><span class="o">!</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">messages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx</span><span class="p">.</span><span class="n">ChangeTracker</span><span class="p">.</span><span class="n">Entries</span><span class="o">&lt;</span><span class="n">Entity</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">            </span><span class="p">.</span><span class="n">SelectMany</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">var</span><span class="w"> </span><span class="n">evts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">DomainEvents</span><span class="p">.</span><span class="n">ToList</span><span class="p">();</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">Entity</span><span class="p">.</span><span class="n">ClearDomainEvents</span><span class="p">();</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">evts</span><span class="p">;</span><span class="w"> </span><span class="p">})</span>
+<span class="w">            </span><span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">OutboxMessage</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="n">Type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">GetType</span><span class="p">().</span><span class="n">FullName</span><span class="o">!</span><span class="p">,</span>
+<span class="w">                </span><span class="n">Payload</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Serialize</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">GetType</span><span class="p">()),</span>
+<span class="w">                </span><span class="n">OccurredAt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">clock</span><span class="p">.</span><span class="n">GetUtcNow</span><span class="p">()</span>
+<span class="w">            </span><span class="p">});</span>
+<span class="w">        </span><span class="n">ctx</span><span class="p">.</span><span class="n">Set</span><span class="o">&lt;</span><span class="n">OutboxMessage</span><span class="o">&gt;</span><span class="p">().</span><span class="n">AddRange</span><span class="p">(</span><span class="n">messages</span><span class="p">);</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">base</span><span class="p">.</span><span class="n">SavingChangesAsync</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">,</span><span class="w"> </span><span class="n">ct</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Procesador</span>
+<span class="k">public</span><span class="w"> </span><span class="k">sealed</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nf">OutboxProcessor</span><span class="p">(</span><span class="n">IServiceScopeFactory</span><span class="w"> </span><span class="n">scopes</span><span class="p">,</span><span class="w"> </span><span class="n">ILogger</span><span class="o">&lt;</span><span class="n">OutboxProcessor</span><span class="o">&gt;</span><span class="w"> </span><span class="n">logger</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">BackgroundService</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">protected</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">CancellationToken</span><span class="w"> </span><span class="n">ct</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">using</span><span class="w"> </span><span class="nn">var</span><span class="w"> </span><span class="n">timer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">PeriodicTimer</span><span class="p">(</span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
+<span class="w">        </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="k">await</span><span class="w"> </span><span class="n">timer</span><span class="p">.</span><span class="n">WaitForNextTickAsync</span><span class="p">(</span><span class="n">ct</span><span class="p">))</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="k">await</span><span class="w"> </span><span class="k">using</span><span class="w"> </span><span class="nn">var</span><span class="w"> </span><span class="n">scope</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scopes</span><span class="p">.</span><span class="n">CreateAsyncScope</span><span class="p">();</span>
+<span class="w">            </span><span class="kt">var</span><span class="w"> </span><span class="n">db</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scope</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="n">GetRequiredService</span><span class="o">&lt;</span><span class="n">OrderingDbContext</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">            </span><span class="kt">var</span><span class="w"> </span><span class="n">publisher</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">scope</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="n">GetRequiredService</span><span class="o">&lt;</span><span class="n">IEventPublisher</span><span class="o">&gt;</span><span class="p">();</span>
+
+<span class="w">            </span><span class="kt">var</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">Set</span><span class="o">&lt;</span><span class="n">OutboxMessage</span><span class="o">&gt;</span><span class="p">()</span>
+<span class="w">                </span><span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">ProcessedAt</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">null</span><span class="p">).</span><span class="n">OrderBy</span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">m</span><span class="p">.</span><span class="n">OccurredAt</span><span class="p">).</span><span class="n">Take</span><span class="p">(</span><span class="mi">50</span><span class="p">).</span><span class="n">ToListAsync</span><span class="p">(</span><span class="n">ct</span><span class="p">);</span>
+
+<span class="w">            </span><span class="k">foreach</span><span class="w"> </span><span class="p">(</span><span class="kt">var</span><span class="w"> </span><span class="n">msg</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">batch</span><span class="p">)</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">publisher</span><span class="p">.</span><span class="n">PublishAsync</span><span class="p">(</span><span class="n">msg</span><span class="p">.</span><span class="n">Type</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">.</span><span class="n">Payload</span><span class="p">,</span><span class="w"> </span><span class="n">messageId</span><span class="p">:</span><span class="w"> </span><span class="n">msg</span><span class="p">.</span><span class="n">Id</span><span class="p">,</span><span class="w"> </span><span class="n">ct</span><span class="p">);</span><span class="w"> </span><span class="n">msg</span><span class="p">.</span><span class="n">ProcessedAt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DateTimeOffset</span><span class="p">.</span><span class="n">UtcNow</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">                </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">msg</span><span class="p">.</span><span class="n">Error</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ex</span><span class="p">.</span><span class="n">Message</span><span class="p">;</span><span class="w"> </span><span class="n">logger</span><span class="p">.</span><span class="n">LogError</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="s">"Outbox {Id} falló"</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">.</span><span class="n">Id</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">            </span><span class="k">await</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">SaveChangesAsync</span><span class="p">(</span><span class="n">ct</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>El outbox garantiza <strong>at-least-once</strong> (si el proceso cae tras publicar y antes de marcar, se publica de nuevo) → consumidores idempotentes, usando <code>messageId</code> para deduplicar (Service Bus tiene <em>duplicate detection</em> nativo).
+En producción con múltiples instancias, evita que dos procesadores tomen el mismo lote (<code>UPDLOCK, READPAST</code> en SQL Server, o una sola instancia líder). Wolverine y MassTransit traen outbox listo.</p>
+</blockquote>
+<hr />
+<h2 id="5-sagas-transacciones-distribuidas">5. Sagas (transacciones distribuidas)</h2>
+<p>No existen transacciones ACID entre servicios. Una <strong>saga</strong> es una secuencia de transacciones locales con <strong>acciones compensatorias</strong>.</p>
+<div class="diagram-wrapper shadow-sm rounded-3 my-4"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-2 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama de Arquitectura / Flujo</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">Mermaid SVG</span></div><div class="diagram-svg-body"><pre class="mermaid mb-0">sequenceDiagram
+    participant O as Ordering
+    participant I as Inventory
+    participant P as Payments
+    O-&gt;&gt;I: ReserveStock
+    I--&gt;&gt;O: StockReserved
+    O-&gt;&gt;P: ChargePayment
+    P--&gt;&gt;O: PaymentFailed ❌
+    O-&gt;&gt;I: ReleaseStock (compensación)
+    O-&gt;&gt;O: Order → Cancelled</pre></div></div>
+
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Ventaja</th>
+<th>Desventaja</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Choreography</strong> (eventos)</td>
+<td>Sin punto central</td>
+<td>Difícil ver el flujo completo</td>
+</tr>
+<tr>
+<td><strong>Orchestration</strong> (orquestador)</td>
+<td>Flujo explícito, fácil de monitorear</td>
+<td>Componente adicional</td>
+</tr>
+</tbody>
+</table></div>
+<p>Herramientas: <strong>Azure Durable Functions</strong> (orquestaciones como código), MassTransit/Wolverine/NServiceBus sagas, <strong>Dapr Workflows</strong>.</p>
+<hr />
+<h2 id="6-degradacion-elegante-y-otros-patrones">6. Degradación elegante y otros patrones</h2>
+<ul>
+<li><strong>Fallback:</strong> si recomendaciones falla, muestra "más vendidos" desde caché.</li>
+<li><strong>Graceful shutdown:</strong> respeta el <code>CancellationToken</code> de <code>BackgroundService</code>; termina el mensaje en curso.</li>
+<li><strong>Health endpoint monitoring:</strong> ver <a href="../modulo-03-observabilidad/04-health-checks-azure-monitor.html">3.4</a>.</li>
+<li><strong>Chaos engineering:</strong> inyecta fallos a propósito (Polly Chaos strategies, <strong>Azure Chaos Studio</strong>).</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Polly chaos: inyecta 10 % de fallos solo en entornos de prueba</span>
+<span class="p">.</span><span class="n">AddResilienceHandler</span><span class="p">(</span><span class="s">"chaos"</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx</span><span class="p">.</span><span class="n">ServiceProvider</span><span class="p">.</span><span class="n">GetRequiredService</span><span class="o">&lt;</span><span class="n">IHostEnvironment</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">    </span><span class="n">b</span><span class="p">.</span><span class="n">AddChaosFault</span><span class="p">(</span><span class="n">env</span><span class="p">.</span><span class="n">IsEnvironment</span><span class="p">(</span><span class="s">"Chaos"</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mf">0.1</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HttpRequestException</span><span class="p">(</span><span class="s">"Chaos!"</span><span class="p">));</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h2 id="antipatrones">⚠️ Antipatrones</h2>
+<ul>
+<li>Retries sin backoff (<em>retry storm</em> que tumba al servicio que intentaba recuperarse).</li>
+<li>Retries anidados en varias capas (3 × 3 × 3 = 27 intentos).</li>
+<li>Timeout del cliente mayor que el del servidor.</li>
+<li>Publicar eventos fuera de la transacción (dual write).</li>
+<li>Llamadas síncronas en cadena entre 5 servicios (la disponibilidad se multiplica: 0,99⁵ ≈ 95 %).</li>
+</ul>
+<h2 id="checklist">✅ Checklist</h2>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Todos mis <code>HttpClient</code> tienen timeout y resiliencia.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">No reintento operaciones no idempotentes.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Mis consumidores de mensajes son idempotentes.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Sé explicar el problema del dual write y cómo lo resuelve el Outbox.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Puedo diseñar una saga con compensaciones.</li>
+</ul>
+<h2 id="ejercicio-orderflow">🏋️ Ejercicio (OrderFlow)</h2>
+<ol>
+<li><code>AddStandardResilienceHandler()</code> en el cliente de pagos; simula fallos con un servicio fake que devuelve 503 aleatorio.</li>
+<li>Implementa <code>Idempotency-Key</code> en <code>POST /payments</code>.</li>
+<li>Implementa Outbox en el módulo Ordering.</li>
+<li>Diseña (diagrama) la saga de checkout con compensación.</li>
+</ol>
+<h2 id="profundiza">📚 Profundiza</h2>
+<ul>
+<li><em>Release It!</em> — Michael Nygard (patrones de estabilidad, imprescindible).</li>
+<li><a href="https://learn.microsoft.com/dotnet/core/resilience/http-resilience" target="_blank" rel="noopener noreferrer">Build resilient HTTP apps (.NET)</a>.</li>
+<li><a href="https://www.pollydocs.org/" target="_blank" rel="noopener noreferrer">Polly docs</a>.</li>
+</ul>
+      </article>
+
+      <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+        <a href="03-escalabilidad.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>&larr; 2.3 Escalabilidad</span></a>
+<a href="05-cloud-native-aspire.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>2.5 Cloud-native con Aspire y contenedores &rarr;</span></a>
+      </div>
+
+      <footer class="text-center text-muted small mt-5 pt-3 border-top">
+        mejorar.dev &middot; Plan de crecimiento para desarrolladores .NET &middot; Bootstrap 5 + Mermaid.js
+      </footer>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const toggleBtn = document.getElementById('sidebarToggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+          document.body.classList.toggle('sidebar-collapsed');
+        });
+      }
+
+      const currentPath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/').toLowerCase();
+      const sidebarLinks = document.querySelectorAll('#sidebarNav a.sidebar-link');
+      let matchedLink = null;
+
+      sidebarLinks.forEach(function (link) {
+        try {
+          const resolved = new URL(link.getAttribute('href'), window.location.href);
+          const linkPath = decodeURIComponent(resolved.pathname).replace(/\\/g, '/').toLowerCase();
+          if (currentPath && linkPath === currentPath) {
+            matchedLink = link;
+          }
+        } catch (e) {}
+      });
+
+      if (matchedLink) {
+        sidebarLinks.forEach(function (l) { l.classList.remove('active'); });
+        matchedLink.classList.add('active');
+        matchedLink.setAttribute('aria-current', 'page');
+        const parentCollapse = matchedLink.closest('.collapse');
+        if (parentCollapse && !parentCollapse.classList.contains('show')) {
+          parentCollapse.classList.add('show');
+        }
+        matchedLink.scrollIntoView({ block: 'nearest' });
+      } else {
+        const presetActive = document.querySelector('#sidebarNav a.sidebar-link.active');
+        if (presetActive) {
+          presetActive.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      const filterInput = document.getElementById('sidebarFilter');
+      if (filterInput) {
+        filterInput.addEventListener('input', function () {
+          const query = this.value.trim().toLowerCase();
+          const groups = document.querySelectorAll('.sidebar-group');
+          groups.forEach(function (group) {
+            const items = group.querySelectorAll('.nav-item');
+            let visibleCount = 0;
+            items.forEach(function (item) {
+              const text = item.textContent.toLowerCase();
+              const match = !query || text.includes(query);
+              item.style.display = match ? '' : 'none';
+              if (match) visibleCount++;
+            });
+            group.style.display = visibleCount > 0 ? '' : 'none';
+            if (query && visibleCount > 0) {
+              const collapseEl = group.querySelector('.collapse');
+              if (collapseEl) collapseEl.classList.add('show');
+            }
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>
