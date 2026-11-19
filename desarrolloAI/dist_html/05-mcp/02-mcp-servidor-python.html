@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05.2 · Servidor MCP en Python — Documentación Desarrollo IA</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <style>
+    :root {
+      --sidebar-width: 310px;
+      --navbar-height: 58px;
+      --brand-primary: #0d6efd;
+      --brand-dark: #0f172a;
+      --bg-soft: #f8fafc;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-soft);
+      color: #1e293b;
+      padding-top: var(--navbar-height);
+      line-height: 1.65;
+    }
+
+    /* Top Navbar */
+    .doc-navbar {
+      height: var(--navbar-height);
+      background-color: var(--brand-dark);
+      z-index: 1040;
+    }
+
+    /* Sidebar fija en escritorio */
+    .doc-sidebar {
+      position: fixed;
+      top: var(--navbar-height);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      overflow-y: auto;
+      background-color: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      z-index: 1030;
+      transition: transform 0.25s ease, width 0.25s ease;
+    }
+
+    body.sidebar-collapsed .doc-sidebar {
+      transform: translateX(-100%);
+    }
+
+    /* Contenedor principal con margen izquierdo para la sidebar */
+    .doc-main {
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.25s ease;
+      min-height: calc(100vh - var(--navbar-height));
+    }
+
+    body.sidebar-collapsed .doc-main {
+      margin-left: 0;
+    }
+
+    /* Estilos del menú lateral */
+    .btn-toggle {
+      color: #334155;
+      background-color: #f1f5f9;
+      border: none;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-toggle:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-toggle.group-active {
+      background-color: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .sidebar-link {
+      color: #475569;
+      font-size: 0.86rem;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-link:hover {
+      color: var(--brand-primary);
+      background-color: #f1f5f9;
+    }
+
+    .sidebar-link.active {
+      color: #0d6efd !important;
+      background-color: #eff6ff !important;
+      border-left-color: #0d6efd;
+      font-weight: 600;
+    }
+
+    /* Contenido del documento */
+    .doc-content-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+    }
+
+    .doc-body h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-body h2 {
+      font-size: 1.45rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 2.2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #f1f5f9;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 1.6rem;
+      margin-bottom: 0.75rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h4, .doc-body h5, .doc-body h6 {
+      font-weight: 600;
+      color: #475569;
+      margin-top: 1.25rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-blockquote {
+      border-left: 4px solid #0d6efd;
+      background-color: #f8fafc;
+      padding: 0.9rem 1.15rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+      font-size: 0.95rem;
+      color: #334155;
+    }
+
+    .doc-blockquote p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Bloques de código y resaltado de sintaxis */
+    .codehilite {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 0.9rem 1rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .codehilite pre, pre {
+      margin: 0;
+      font-family: 'Cascadia Mono', 'Consolas', 'SFMono-Regular', Menlo, Monaco, monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    /* Diagramas ASCII / Unicode */
+    .diagram-wrapper {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+
+    .diagram-header {
+      background-color: #1e293b;
+      color: #94a3b8;
+      border-color: #334155 !important;
+    }
+
+    .diagram-wrapper .codehilite,
+    .diagram-wrapper pre {
+      background-color: transparent !important;
+      border: none !important;
+      color: #f8fafc !important;
+      padding: 1rem;
+      margin: 0;
+      line-height: 1.25;
+      font-size: 0.84rem;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: 'Cascadia Mono', 'Consolas', monospace;
+      font-size: 0.875em;
+      color: #0f172a;
+      background-color: #f1f5f9;
+      padding: 0.15em 0.38em;
+      border-radius: 0.25rem;
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    .task-list-item {
+      list-style-type: none;
+      margin-left: -1.25rem;
+    }
+
+    .toc-card ul {
+      margin-bottom: 0;
+      padding-left: 1.2rem;
+      font-size: 0.88rem;
+    }
+
+    .toc-card a {
+      text-decoration: none;
+      color: #334155;
+    }
+
+    .toc-card a:hover {
+      color: #0d6efd;
+      text-decoration: underline;
+    }
+
+    /* Responsive: en dispositivos móviles la sidebar pasa a posición relativa/apilada y el contenido ocupa 100% */
+    @media (max-width: 991.98px) {
+      .doc-sidebar {
+        position: relative;
+        top: 0;
+        width: 100%;
+        max-height: 420px;
+        border-right: none;
+        border-bottom: 1px solid #cbd5e1;
+        transform: none !important;
+      }
+
+      body.sidebar-collapsed .doc-sidebar {
+        display: none;
+      }
+
+      .doc-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+  </style>
+</head>
+<body>
+
+  <!-- Barra de navegación superior fija (fixed-top) -->
+  <nav class="navbar navbar-dark doc-navbar fixed-top shadow-sm px-3">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-light btn-sm d-flex align-items-center gap-1" id="sidebarToggle" type="button" title="Ocultar o mostrar barra lateral" aria-label="Alternar barra lateral">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+          <span class="d-none d-sm-inline small">Menú</span>
+        </button>
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2 mb-0 ms-1" href="../README.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5ZM3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.58 26.58 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.933.933 0 0 1-.765.935c-.845.147-2.34.346-4.235.346-1.895 0-3.39-.2-4.235-.346A.933.933 0 0 1 3 9.219V8.062Zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a24.767 24.767 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25.286 25.286 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135Z"/>
+            <path d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2V1.866ZM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5Z"/>
+          </svg>
+          <span>Desarrollo Agéntico con IA</span>
+        </a>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="../00-ruta-de-aprendizaje.html" class="btn btn-sm btn-outline-info d-none d-md-inline-block">Ruta de aprendizaje</a>
+        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">05-mcp/02-mcp-servidor-python.html</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Barra lateral fija (Sidebar) -->
+  <aside class="doc-sidebar shadow-sm p-3" id="docSidebar" aria-label="Navegación de documentación">
+    <div class="mb-3">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-light border-end-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+        </span>
+        <input type="search" id="sidebarFilter" class="form-control bg-light border-start-0" placeholder="Filtrar documentos..." aria-label="Filtrar documentos">
+      </div>
+    </div>
+    <nav id="sidebarNav">
+      <div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-section-0" aria-expanded="true" aria-controls="submenu-section-0"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>Inicio / Raíz</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">2</span></button>
+<div class="collapse show" id="submenu-section-0">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../README.html" title="README.html"><span class="d-block text-truncate">🤖 Desarrollo de software asistido por IA (agéntico)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../00-ruta-de-aprendizaje.html" title="00-ruta-de-aprendizaje.html"><span class="d-block text-truncate">00 · Ruta de aprendizaje</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-01-fundamentos-1" aria-expanded="true" aria-controls="submenu-01-fundamentos-1"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>01-fundamentos</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-01-fundamentos-1">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-fundamentos/01-que-es-el-desarrollo-agentico.html" title="01-fundamentos/01-que-es-el-desarrollo-agentico.html"><span class="d-block text-truncate">01.1 · ¿Qué es el desarrollo agéntico?</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-fundamentos/02-llms-contexto-y-tokens.html" title="01-fundamentos/02-llms-contexto-y-tokens.html"><span class="d-block text-truncate">01.2 · LLMs, contexto y tokens (lo que necesitas saber)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-fundamentos/03-context-engineering-e-instrucciones.html" title="01-fundamentos/03-context-engineering-e-instrucciones.html"><span class="d-block text-truncate">01.3 · Context engineering e instrucciones (CLAUDE.md, AGENTS.md, rules)</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-02-flujos-de-trabajo-2" aria-expanded="true" aria-controls="submenu-02-flujos-de-trabajo-2"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>02-flujos-de-trabajo</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">2</span></button>
+<div class="collapse show" id="submenu-02-flujos-de-trabajo-2">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../02-flujos-de-trabajo/01-flujos-de-trabajo-agenticos.html" title="02-flujos-de-trabajo/01-flujos-de-trabajo-agenticos.html"><span class="d-block text-truncate">02.1 · Flujos de trabajo agénticos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../02-flujos-de-trabajo/02-seguridad-y-buenas-practicas.html" title="02-flujos-de-trabajo/02-seguridad-y-buenas-practicas.html"><span class="d-block text-truncate">02.2 · Seguridad y buenas prácticas</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-03-herramientas-3" aria-expanded="true" aria-controls="submenu-03-herramientas-3"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>03-herramientas</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-03-herramientas-3">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../03-herramientas/01-claude-code.html" title="03-herramientas/01-claude-code.html"><span class="d-block text-truncate">03.1 · Claude Code</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../03-herramientas/02-opencode.html" title="03-herramientas/02-opencode.html"><span class="d-block text-truncate">03.2 · OpenCode</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../03-herramientas/03-comparativa-claude-code-vs-opencode.html" title="03-herramientas/03-comparativa-claude-code-vs-opencode.html"><span class="d-block text-truncate">03.3 · Comparativa: Claude Code vs OpenCode</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-04-extensibilidad-4" aria-expanded="true" aria-controls="submenu-04-extensibilidad-4"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>04-extensibilidad</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-04-extensibilidad-4">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../04-extensibilidad/01-skills.html" title="04-extensibilidad/01-skills.html"><span class="d-block text-truncate">04.1 · Skills</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../04-extensibilidad/02-agentes-y-subagentes.html" title="04-extensibilidad/02-agentes-y-subagentes.html"><span class="d-block text-truncate">04.2 · Agentes y subagentes</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../04-extensibilidad/03-hooks-comandos-y-plugins.html" title="04-extensibilidad/03-hooks-comandos-y-plugins.html"><span class="d-block text-truncate">04.3 · Hooks, comandos y plugins</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold group-active" type="button" data-bs-toggle="collapse" data-bs-target="#submenu-05-mcp-5" aria-expanded="true" aria-controls="submenu-05-mcp-5"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>05-mcp</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">6</span></button>
+<div class="collapse show" id="submenu-05-mcp-5">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="01-mcp-conceptos.html" title="05-mcp/01-mcp-conceptos.html"><span class="d-block text-truncate">05.1 · MCP (Model Context Protocol): conceptos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link active py-1 px-3 rounded-2" href="02-mcp-servidor-python.html" aria-current="page" title="05-mcp/02-mcp-servidor-python.html"><span class="d-block text-truncate">05.2 · Servidor MCP en Python</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="03-mcp-servidor-nodejs.html" title="05-mcp/03-mcp-servidor-nodejs.html"><span class="d-block text-truncate">05.3 · Servidor MCP en Node.js (TypeScript)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="04-mcp-servidor-csharp.html" title="05-mcp/04-mcp-servidor-csharp.html"><span class="d-block text-truncate">05.4 · Servidor MCP en C# (.NET)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="05-mcp-clientes-python-node-csharp.html" title="05-mcp/05-mcp-clientes-python-node-csharp.html"><span class="d-block text-truncate">05.5 · Clientes MCP en Python, Node.js y C# (y tu propio agente)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="06-mcp-configuracion-en-clientes.html" title="05-mcp/06-mcp-configuracion-en-clientes.html"><span class="d-block text-truncate">05.6 · Configurar servidores MCP en clientes (Claude Code, OpenCode, VS Code, Claude Desktop)</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-06-spec-driven-6" aria-expanded="true" aria-controls="submenu-06-spec-driven-6"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>06-spec-driven</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">1</span></button>
+<div class="collapse show" id="submenu-06-spec-driven-6">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../06-spec-driven/01-openspec.html" title="06-spec-driven/01-openspec.html"><span class="d-block text-truncate">06.1 · OpenSpec y spec-driven development</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-07-testing-7" aria-expanded="true" aria-controls="submenu-07-testing-7"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>07-testing</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-07-testing-7">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../07-testing/01-pruebas-unitarias-con-ia.html" title="07-testing/01-pruebas-unitarias-con-ia.html"><span class="d-block text-truncate">07.1 · Pruebas unitarias con IA (Python, TypeScript, C# y en el navegador)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../07-testing/02-playwright-e2e-fundamentos.html" title="07-testing/02-playwright-e2e-fundamentos.html"><span class="d-block text-truncate">07.2 · Playwright E2E: fundamentos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../07-testing/03-playwright-con-ia-mcp-y-test-agents.html" title="07-testing/03-playwright-con-ia-mcp-y-test-agents.html"><span class="d-block text-truncate">07.3 · Playwright con IA: Playwright MCP y Playwright Test Agents</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-08-proyecto-integrador-8" aria-expanded="true" aria-controls="submenu-08-proyecto-integrador-8"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>08-proyecto-integrador</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">1</span></button>
+<div class="collapse show" id="submenu-08-proyecto-integrador-8">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../08-proyecto-integrador/01-proyecto-integrador.html" title="08-proyecto-integrador/01-proyecto-integrador.html"><span class="d-block text-truncate">08 · Proyecto integrador: &quot;TaskFlow&quot; de principio a fin</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-09-avanzado-9" aria-expanded="true" aria-controls="submenu-09-avanzado-9"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>09-avanzado</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-09-avanzado-9">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../09-avanzado/01-aislamiento-sandbox-devcontainers-docker.html" title="09-avanzado/01-aislamiento-sandbox-devcontainers-docker.html"><span class="d-block text-truncate">09.1 · Aislamiento serio: sandbox, Dev Containers y Docker Sandboxes</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../09-avanzado/02-evaluacion-y-observabilidad.html" title="09-avanzado/02-evaluacion-y-observabilidad.html"><span class="d-block text-truncate">09.2 · Evaluación y observabilidad de agentes</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../09-avanzado/03-rag-y-memoria-persistente.html" title="09-avanzado/03-rag-y-memoria-persistente.html"><span class="d-block text-truncate">09.3 · Patrones RAG y memoria persistente</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-plantillas-10" aria-expanded="true" aria-controls="submenu-plantillas-10"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>plantillas</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">16</span></button>
+<div class="collapse show" id="submenu-plantillas-10">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/AGENTS.html" title="plantillas/AGENTS.html"><span class="d-block text-truncate">Proyecto: &lt;NOMBRE&gt;</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/agents/code-reviewer.html" title="plantillas/claude-code/.claude/agents/code-reviewer.html"><span class="d-block text-truncate">code-reviewer (claude-code/.claude/agents/code-reviewer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/agents/code-reviewer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/agents/e2e-tester.html" title="plantillas/claude-code/.claude/agents/e2e-tester.html"><span class="d-block text-truncate">e2e-tester (claude-code/.claude/agents/e2e-tester.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/agents/e2e-tester.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/agents/test-writer.html" title="plantillas/claude-code/.claude/agents/test-writer.html"><span class="d-block text-truncate">test-writer (claude-code/.claude/agents/test-writer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/agents/test-writer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/skills/crear-endpoint/SKILL.html" title="plantillas/claude-code/.claude/skills/crear-endpoint/SKILL.html"><span class="d-block text-truncate">Crear endpoint REST</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/skills/crear-endpoint/SKILL.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/skills/release/SKILL.html" title="plantillas/claude-code/.claude/skills/release/SKILL.html"><span class="d-block text-truncate">SKILL (claude-code/.claude/skills/release/SKILL.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/skills/release/SKILL.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/CLAUDE.html" title="plantillas/CLAUDE.html"><span class="d-block text-truncate">CLAUDE</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/agents/reviewer.html" title="plantillas/opencode/.opencode/agents/reviewer.html"><span class="d-block text-truncate">reviewer (opencode/.opencode/agents/reviewer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/agents/reviewer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/agents/test-writer.html" title="plantillas/opencode/.opencode/agents/test-writer.html"><span class="d-block text-truncate">test-writer (opencode/.opencode/agents/test-writer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/agents/test-writer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/commands/fix-issue.html" title="plantillas/opencode/.opencode/commands/fix-issue.html"><span class="d-block text-truncate">fix-issue (opencode/.opencode/commands/fix-issue.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/commands/fix-issue.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/commands/review.html" title="plantillas/opencode/.opencode/commands/review.html"><span class="d-block text-truncate">review (opencode/.opencode/commands/review.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/commands/review.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/design.html" title="plantillas/openspec/changes/nombre-del-cambio/design.html"><span class="d-block text-truncate">Diseño: &lt;título del cambio&gt;</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/design.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/proposal.html" title="plantillas/openspec/changes/nombre-del-cambio/proposal.html"><span class="d-block text-truncate">Propuesta: &lt;título del cambio&gt;</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/proposal.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/specs/capacidad/spec.html" title="plantillas/openspec/changes/nombre-del-cambio/specs/capacidad/spec.html"><span class="d-block text-truncate">spec (openspec/changes/nombre-del-cambio/specs/capacidad/spec.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/specs/capacidad/spec.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/tasks.html" title="plantillas/openspec/changes/nombre-del-cambio/tasks.html"><span class="d-block text-truncate">tasks (openspec/changes/nombre-del-cambio/tasks.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/tasks.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/README.html" title="plantillas/README.html"><span class="d-block text-truncate">Plantillas reutilizables</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-referencia-11" aria-expanded="true" aria-controls="submenu-referencia-11"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>referencia</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">7</span></button>
+<div class="collapse show" id="submenu-referencia-11">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-claude-code.html" title="referencia/cheatsheet-claude-code.html"><span class="d-block text-truncate">Cheatsheet · Claude Code</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-mcp.html" title="referencia/cheatsheet-mcp.html"><span class="d-block text-truncate">Cheatsheet · MCP (spec 2026-07-28, SDK v2)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-opencode.html" title="referencia/cheatsheet-opencode.html"><span class="d-block text-truncate">Cheatsheet · OpenCode 2.x</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-openspec.html" title="referencia/cheatsheet-openspec.html"><span class="d-block text-truncate">Cheatsheet · OpenSpec 1.x</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-playwright.html" title="referencia/cheatsheet-playwright.html"><span class="d-block text-truncate">Cheatsheet · Playwright</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/glosario.html" title="referencia/glosario.html"><span class="d-block text-truncate">Glosario (inglés → español)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/recursos-y-fuentes.html" title="referencia/recursos-y-fuentes.html"><span class="d-block text-truncate">Recursos y fuentes oficiales</span></a></li>
+</ul>
+</div>
+</div>
+    </nav>
+  </aside>
+
+  <!-- Contenedor principal de contenido -->
+  <main class="doc-main p-3 p-md-4 p-lg-5">
+    <div class="container-xxl">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-white px-3 py-2 rounded-3 shadow-sm border mb-0 small">
+          <li class="breadcrumb-item"><a href="../README.html" class="text-decoration-none">Inicio</a></li>
+<li class="breadcrumb-item text-muted">05-mcp</li>
+<li class="breadcrumb-item active fw-semibold" aria-current="page">02-mcp-servidor-python.html</li>
+        </ol>
+      </nav>
+
+      
+        <div class="card border-0 shadow-sm mb-4 toc-card">
+          <div class="card-body py-2 px-3">
+            <button class="btn btn-sm btn-link text-decoration-none text-dark fw-semibold p-0 d-flex align-items-center gap-2 w-100 justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#pageTocCollapse" aria-expanded="false" aria-controls="pageTocCollapse">
+              <span class="d-flex align-items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                </svg>
+                Contenido de esta página
+              </span>
+              <span class="small text-muted">Mostrar / Ocultar</span>
+            </button>
+            <div class="collapse mt-2" id="pageTocCollapse">
+              <div class="toc">
+<ul>
+<li><a href="#052-servidor-mcp-en-python">05.2 · Servidor MCP en Python</a><ul>
+<li><a href="#objetivos">Objetivos</a></li>
+<li><a href="#1-preparar-el-proyecto">1. Preparar el proyecto</a></li>
+<li><a href="#2-la-logica-de-negocio-independiente-de-mcp">2. La lógica de negocio (independiente de MCP)</a></li>
+<li><a href="#3-el-servidor-mcp">3. El servidor MCP</a></li>
+<li><a href="#4-ejecutar-y-probar">4. Ejecutar y probar</a><ul>
+<li><a href="#con-mcp-inspector-recomendado-para-desarrollar">Con MCP Inspector (recomendado para desarrollar)</a></li>
+<li><a href="#por-stdio-lo-que-hara-claude-codeopencode">Por stdio (lo que hará Claude Code/OpenCode)</a></li>
+<li><a href="#por-streamable-http">Por Streamable HTTP</a></li>
+</ul>
+</li>
+<li><a href="#5-conectarlo-a-claude-code-y-opencode">5. Conectarlo a Claude Code y OpenCode</a></li>
+<li><a href="#6-tests">6. Tests</a><ul>
+<li><a href="#logica-pura">Lógica pura</a></li>
+<li><a href="#integracion-via-protocolo-cliente-mcp-real-por-stdio">Integración vía protocolo (cliente MCP real por stdio)</a></li>
+</ul>
+</li>
+<li><a href="#7-mas-alla">7. Más allá</a></li>
+<li><a href="#errores-comunes">Errores comunes</a></li>
+<li><a href="#ejercicios">Ejercicios</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+            </div>
+          </div>
+        </div>
+        
+
+      <article class="doc-content-card shadow-sm p-4 p-md-5 doc-body">
+        <h1 id="052-servidor-mcp-en-python">05.2 · Servidor MCP en Python</h1>
+<h2 id="objetivos">Objetivos</h2>
+<ul>
+<li>Crear un servidor MCP completo con el <strong>SDK oficial de Python v2</strong> (<code>mcp</code> 2.x).</li>
+<li>Exponer tools (con salida estructurada), resources (estáticos y plantillas) y prompts.</li>
+<li>Usar <code>Context</code> (progreso, lectura de recursos) y logging seguro.</li>
+<li>Ejecutarlo por stdio y Streamable HTTP, probarlo con MCP Inspector y con pytest.</li>
+</ul>
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p><strong>Proyecto común:</strong> en Python, Node y C# construiremos el <strong>mismo servidor "tareas"</strong> para que compares los tres SDK.</p>
+</blockquote>
+<hr />
+<h2 id="1-preparar-el-proyecto">1. Preparar el proyecto</h2>
+<p>Requisitos: Python 3.11+ y <a href="https://docs.astral.sh/uv/" target="_blank" rel="noopener noreferrer"><code>uv</code></a>.</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>init<span class="w"> </span>mcp-tareas-py
+<span class="nb">cd</span><span class="w"> </span>mcp-tareas-py
+uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"mcp[cli]"</span><span class="w"> </span>pydantic
+uv<span class="w"> </span>add<span class="w"> </span>--dev<span class="w"> </span>pytest<span class="w"> </span>anyio
+</code></pre></div>
+
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>El extra <code>[cli]</code> instala el comando <code>mcp</code> (<code>mcp dev</code>, <code>mcp run</code>).</p>
+<p><strong>¿Vienes de v1?</strong> En <code>mcp</code> 1.x la clase era <code>FastMCP</code> (<code>from mcp.server.fastmcp import FastMCP</code>). En v2 es <code>MCPServer</code> (<code>from mcp.server import MCPServer</code>). La API de decoradores es muy parecida. Revisa la <em>Migration Guide</em> oficial.</p>
+</blockquote>
+<p>Estructura:</p>
+<div class="diagram-wrapper shadow-sm rounded-3 my-3"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-1 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama SVG · Estructura de Directorios y Archivos</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">SVG</span></div><div class="diagram-svg-body" style="background:#0f172a;padding:1.25rem 1rem;overflow-x:auto;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 254" width="100%" style="display:block;margin:0 auto;max-width:680px;height:auto;" role="img" aria-label="Estructura de archivos: mcp-tareas-py/"><defs><marker id="arrow-sky" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#38bdf8"/></marker><marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#34d399"/></marker><marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#fbbf24"/></marker><marker id="arrow-violet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#a78bfa"/></marker><marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#94a3b8"/></marker></defs><path d="M 24 32.0 a 1.5 1.5 0 0 1 1.5 -1.5 h 4 l 1.5 2 h 6.5 a 1.5 1.5 0 0 1 1.5 1.5 v 7.5 a 1.5 1.5 0 0 1 -1.5 1.5 h -12 a 1.5 1.5 0 0 1 -1.5 -1.5 z" fill="#38bdf8" fill-opacity="0.22" stroke="#38bdf8" stroke-width="1.3"/><text x="46" y="41.5" fill="#38bdf8" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="700">mcp-tareas-py/</text><rect x="10" y="52" width="660" height="30" rx="4" fill="#1e293b" fill-opacity="0.35"/><line x1="31" y1="52" x2="31" y2="82" stroke="#475569" stroke-width="1.5"/><line x1="31" y1="67.0" x2="44" y2="67.0" stroke="#475569" stroke-width="1.5"/><rect x="49" y="60.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="70" y="71.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">pyproject.toml</text><line x1="31" y1="82" x2="31" y2="112" stroke="#475569" stroke-width="1.5"/><line x1="31" y1="97.0" x2="44" y2="97.0" stroke="#475569" stroke-width="1.5"/><rect x="49" y="90.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="70" y="101.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">server.py</text><rect x="10" y="112" width="660" height="30" rx="4" fill="#1e293b" fill-opacity="0.35"/><line x1="31" y1="112" x2="31" y2="142" stroke="#475569" stroke-width="1.5"/><line x1="31" y1="127.0" x2="44" y2="127.0" stroke="#475569" stroke-width="1.5"/><rect x="49" y="120.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="70" y="131.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">almacen.py</text><path d="M 31 142 L 31 157.0 L 44 157.0" fill="none" stroke="#475569" stroke-width="1.5"/><path d="M 48 152.0 a 1.5 1.5 0 0 1 1.5 -1.5 h 4 l 1.5 2 h 6.5 a 1.5 1.5 0 0 1 1.5 1.5 v 7.5 a 1.5 1.5 0 0 1 -1.5 1.5 h -12 a 1.5 1.5 0 0 1 -1.5 -1.5 z" fill="#38bdf8" fill-opacity="0.22" stroke="#38bdf8" stroke-width="1.3"/><text x="70" y="161.5" fill="#38bdf8" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="700">tests/</text><rect x="10" y="172" width="660" height="30" rx="4" fill="#1e293b" fill-opacity="0.35"/><line x1="55" y1="172" x2="55" y2="202" stroke="#475569" stroke-width="1.5"/><line x1="55" y1="187.0" x2="68" y2="187.0" stroke="#475569" stroke-width="1.5"/><rect x="73" y="180.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="94" y="191.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">test_almacen.py</text><path d="M 55 202 L 55 217.0 L 68 217.0" fill="none" stroke="#475569" stroke-width="1.5"/><rect x="73" y="210.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="94" y="221.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">test_servidor.py</text></svg></div><div class="d-none"><pre><code>
+├── pyproject.toml
+├── server.py
+├── almacen.py
+└── tests/
+    ├── test_almacen.py
+    └── test_servidor.py
+</code></pre></div></div>
+
+<hr />
+<h2 id="2-la-logica-de-negocio-independiente-de-mcp">2. La lógica de negocio (independiente de MCP)</h2>
+<p><code>almacen.py</code></p>
+<div class="codehilite"><pre><span></span><code><span class="sd">"""Almacén de tareas en un archivo JSON. Sin dependencias de MCP: fácil de testear."""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+
+<span class="n">Prioridad</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"alta"</span><span class="p">,</span> <span class="s2">"media"</span><span class="p">,</span> <span class="s2">"baja"</span><span class="p">]</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Tarea</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">titulo</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+    <span class="n">prioridad</span><span class="p">:</span> <span class="n">Prioridad</span> <span class="o">=</span> <span class="s2">"media"</span>
+    <span class="n">completada</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">creada</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Almacen</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ruta</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ruta</span> <span class="o">=</span> <span class="n">ruta</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ruta</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ruta</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">"[]"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_leer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tarea</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">Tarea</span><span class="p">(</span><span class="o">**</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ruta</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">))]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_guardar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tareas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tarea</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ruta</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">([</span><span class="n">t</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tareas</span><span class="p">],</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+            <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">agregar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">titulo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prioridad</span><span class="p">:</span> <span class="n">Prioridad</span> <span class="o">=</span> <span class="s2">"media"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tarea</span><span class="p">:</span>
+        <span class="n">tareas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_leer</span><span class="p">()</span>
+        <span class="n">nueva</span> <span class="o">=</span> <span class="n">Tarea</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="nb">max</span><span class="p">((</span><span class="n">t</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tareas</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">titulo</span><span class="o">=</span><span class="n">titulo</span><span class="o">.</span><span class="n">strip</span><span class="p">(),</span>
+            <span class="n">prioridad</span><span class="o">=</span><span class="n">prioridad</span><span class="p">,</span>
+            <span class="n">creada</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+        <span class="p">)</span>
+        <span class="n">tareas</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nueva</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_guardar</span><span class="p">(</span><span class="n">tareas</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">nueva</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">listar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">solo_pendientes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tarea</span><span class="p">]:</span>
+        <span class="n">tareas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_leer</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tareas</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">t</span><span class="o">.</span><span class="n">completada</span><span class="p">]</span> <span class="k">if</span> <span class="n">solo_pendientes</span> <span class="k">else</span> <span class="n">tareas</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">obtener</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tarea_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tarea</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_leer</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">tarea_id</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">t</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No existe la tarea </span><span class="si">{</span><span class="n">tarea_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">completar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tarea_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tarea</span><span class="p">:</span>
+        <span class="n">tareas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_leer</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tareas</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">tarea_id</span><span class="p">:</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">completada</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_guardar</span><span class="p">(</span><span class="n">tareas</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">t</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"No existe la tarea </span><span class="si">{</span><span class="n">tarea_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3-el-servidor-mcp">3. El servidor MCP</h2>
+<p><code>server.py</code></p>
+<div><div class="codehilite"><pre><span></span><code><span class="sd">"""Servidor MCP 'tareas' con el SDK oficial de Python v2."""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCPServer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.mcpserver</span><span class="w"> </span><span class="kn">import</span> <span class="n">Context</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">almacen</span><span class="w"> </span><span class="kn">import</span> <span class="n">Almacen</span><span class="p">,</span> <span class="n">Prioridad</span><span class="p">,</span> <span class="n">Tarea</span>
+
+<span class="c1"># Logging SIEMPRE a stderr (stdout es el canal del protocolo en stdio)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">"</span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(levelname)s</span><span class="s2"> </span><span class="si">%(message)s</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"mcp-tareas"</span><span class="p">)</span>
+
+<span class="n">RUTA_DATOS</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"TAREAS_ARCHIVO"</span><span class="p">,</span> <span class="s2">"tareas.json"</span><span class="p">))</span>
+<span class="n">almacen</span> <span class="o">=</span> <span class="n">Almacen</span><span class="p">(</span><span class="n">RUTA_DATOS</span><span class="p">)</span>
+
+<span class="n">mcp</span> <span class="o">=</span> <span class="n">MCPServer</span><span class="p">(</span><span class="s2">"tareas"</span><span class="p">)</span>
+
+
+<span class="c1"># ───────────────────────────── TOOLS ─────────────────────────────</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">agregar_tarea</span><span class="p">(</span><span class="n">titulo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prioridad</span><span class="p">:</span> <span class="n">Prioridad</span> <span class="o">=</span> <span class="s2">"media"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tarea</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Crea una tarea nueva.</span>
+
+<span class="sd">    Úsala cuando el usuario quiera apuntar, añadir o crear una tarea/pendiente.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        titulo: Texto corto de la tarea (máx. 200 caracteres).</span>
+<span class="sd">        prioridad: 'alta', 'media' o 'baja'. Por defecto 'media'.</span>
+<span class="sd">    """</span>
+    <span class="n">tarea</span> <span class="o">=</span> <span class="n">almacen</span><span class="o">.</span><span class="n">agregar</span><span class="p">(</span><span class="n">titulo</span><span class="p">,</span> <span class="n">prioridad</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Tarea creada: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">tarea</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tarea</span>  <span class="c1"># modelo Pydantic → salida estructurada + texto</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ListaTareas</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">tareas</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tarea</span><span class="p">]</span>
+
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">listar_tareas</span><span class="p">(</span><span class="n">solo_pendientes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ListaTareas</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista las tareas. Por defecto solo las pendientes.</span>
+
+<span class="sd">    Úsala para responder preguntas sobre qué hay pendiente o el estado de las tareas.</span>
+<span class="sd">    """</span>
+    <span class="n">tareas</span> <span class="o">=</span> <span class="n">almacen</span><span class="o">.</span><span class="n">listar</span><span class="p">(</span><span class="n">solo_pendientes</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ListaTareas</span><span class="p">(</span><span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">tareas</span><span class="p">),</span> <span class="n">tareas</span><span class="o">=</span><span class="n">tareas</span><span class="p">)</span>
+
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">completar_tarea</span><span class="p">(</span><span class="n">tarea_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tarea</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Marca una tarea como completada a partir de su id numérico.</span>
+
+<span class="sd">    Si no conoces el id, llama antes a `listar_tareas`.</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">almacen</span><span class="o">.</span><span class="n">completar</span><span class="p">(</span><span class="n">tarea_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Una excepción se devuelve al cliente como resultado con is_error=True,</span>
+        <span class="c1"># y el mensaje ayuda al modelo a corregirse.</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">. Usa listar_tareas para ver los ids válidos."</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resumen_con_progreso</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Genera un resumen del estado de las tareas informando del progreso."""</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">report_progress</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"Leyendo tareas"</span><span class="p">)</span>
+    <span class="n">tareas</span> <span class="o">=</span> <span class="n">almacen</span><span class="o">.</span><span class="n">listar</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">report_progress</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"Calculando"</span><span class="p">)</span>
+    <span class="n">pendientes</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tareas</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">t</span><span class="o">.</span><span class="n">completada</span><span class="p">]</span>
+    <span class="n">altas</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">pendientes</span> <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">prioridad</span> <span class="o">==</span> <span class="s2">"alta"</span><span class="p">]</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">report_progress</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"Listo"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"Total: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">tareas</span><span class="p">)</span><span class="si">}</span><span class="s2"> · Pendientes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pendientes</span><span class="p">)</span><span class="si">}</span><span class="s2"> · "</span>
+        <span class="sa">f</span><span class="s2">"Alta prioridad pendientes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">altas</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+
+
+<span class="c1"># ─────────────────────────── RESOURCES ───────────────────────────</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">"tareas://pendientes"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">recurso_pendientes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista legible de tareas pendientes."""</span>
+    <span class="n">lineas</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"- [</span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">prioridad</span><span class="si">}</span><span class="s2">] #</span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">titulo</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">almacen</span><span class="o">.</span><span class="n">listar</span><span class="p">(</span><span class="kc">True</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lineas</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"No hay tareas pendientes."</span>
+
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">"tareas://</span><span class="si">{tarea_id}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">recurso_tarea</span><span class="p">(</span><span class="n">tarea_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Detalle de una tarea concreta en JSON."""</span>
+    <span class="k">return</span> <span class="n">almacen</span><span class="o">.</span><span class="n">obtener</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tarea_id</span><span class="p">))</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+
+<span class="c1"># ──────────────────────────── PROMPTS ────────────────────────────</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">prompt</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">planificar_dia</span><span class="p">(</span><span class="n">horas_disponibles</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"8"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Plantilla para planificar el día con las tareas pendientes."""</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"Tengo </span><span class="si">{</span><span class="n">horas_disponibles</span><span class="si">}</span><span class="s2"> horas hoy. Usa la herramienta listar_tareas y "</span>
+        <span class="s2">"propón un plan ordenado por prioridad, con estimación de tiempo por tarea "</span>
+        <span class="s2">"y qué dejar para mañana si no da tiempo."</span>
+    <span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="c1"># stdio por defecto. Para HTTP: mcp.run(transport="streamable-http", port=8000)</span>
+    <span class="n">mcp</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p><strong>Puntos clave</strong>
+- Los <strong>type hints</strong> y el <strong>docstring</strong> generan el JSON Schema y la descripción: no escribes schemas a mano.
+- <code>Literal["alta","media","baja"]</code> se convierte en un <code>enum</code> en el schema.
+- Devolver un <strong>modelo Pydantic</strong> produce <strong>salida estructurada</strong> (<code>structured_content</code>) además del texto.
+- <code>Context</code> se inyecta si declaras un parámetro <code>ctx: Context</code>; no aparece en el schema.
+- No hay método de logging en <code>Context</code>: usa el módulo <code>logging</code> (a stderr).</p>
+<hr />
+<h2 id="4-ejecutar-y-probar">4. Ejecutar y probar</h2>
+<h3 id="con-mcp-inspector-recomendado-para-desarrollar">Con MCP Inspector (recomendado para desarrollar)</h3>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>mcp<span class="w"> </span>dev<span class="w"> </span>server.py
+</code></pre></div>
+
+<p>Abre el Inspector en el navegador (requiere <code>npx</code> en el PATH). Pestañas <strong>Tools</strong>, <strong>Resources</strong>, <strong>Prompts</strong>: prueba <code>agregar_tarea</code>, lee <code>tareas://pendientes</code>, etc.</p>
+<h3 id="por-stdio-lo-que-hara-claude-codeopencode">Por stdio (lo que hará Claude Code/OpenCode)</h3>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>server.py<span class="w">          </span><span class="c1"># se queda esperando en stdin: es normal</span>
+</code></pre></div>
+
+<h3 id="por-streamable-http">Por Streamable HTTP</h3>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>mcp<span class="w"> </span>run<span class="w"> </span>server.py<span class="w"> </span>--transport<span class="w"> </span>streamable-http
+<span class="c1"># o en el código: mcp.run(transport="streamable-http", port=8000)</span>
+</code></pre></div>
+
+<p>Endpoint: <code>http://127.0.0.1:8000/mcp</code> (por defecto host <code>127.0.0.1</code>, puerto <code>8000</code>, ruta <code>/mcp</code>; se cambian con argumentos de <code>run()</code>, no del constructor).</p>
+<hr />
+<h2 id="5-conectarlo-a-claude-code-y-opencode">5. Conectarlo a Claude Code y OpenCode</h2>
+<p><strong>Claude Code</strong> (stdio):</p>
+<div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>tareas<span class="w"> </span>--<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>--directory<span class="w"> </span>/ruta/absoluta/mcp-tareas-py<span class="w"> </span>server.py
+<span class="c1"># Windows: usa la ruta de Windows, p. ej. D:\\proyectos\\mcp-tareas-py</span>
+</code></pre></div>
+
+<p>Comprueba con <code>/mcp</code> y pide: <em>"Añade una tarea de prioridad alta: preparar demo"</em>.</p>
+<p><strong>OpenCode</strong> (<code>opencode.json</code>):</p>
+<div class="codehilite"><pre><span></span><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "tareas": {
+        "type": "local",
+        "command": ["uv", "run", "--directory", "/ruta/absoluta/mcp-tareas-py", "server.py"],
+        "environment": { "TAREAS_ARCHIVO": "/ruta/absoluta/tareas.json" }
+      }
+    }
+  }
+}
+</code></pre></div>
+
+<p>Más opciones en <a href="06-mcp-configuracion-en-clientes.html">05.6</a>.</p>
+<hr />
+<h2 id="6-tests">6. Tests</h2>
+<h3 id="logica-pura">Lógica pura</h3>
+<p><code>tests/test_almacen.py</code></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">almacen</span><span class="w"> </span><span class="kn">import</span> <span class="n">Almacen</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">almacen</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">Almacen</span><span class="p">(</span><span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">"tareas.json"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_agregar_asigna_ids_incrementales</span><span class="p">(</span><span class="n">almacen</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">almacen</span><span class="o">.</span><span class="n">agregar</span><span class="p">(</span><span class="s2">"A"</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">almacen</span><span class="o">.</span><span class="n">agregar</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="s2">"alta"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">prioridad</span> <span class="o">==</span> <span class="s2">"alta"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_listar_solo_pendientes</span><span class="p">(</span><span class="n">almacen</span><span class="p">):</span>
+    <span class="n">almacen</span><span class="o">.</span><span class="n">agregar</span><span class="p">(</span><span class="s2">"A"</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">almacen</span><span class="o">.</span><span class="n">agregar</span><span class="p">(</span><span class="s2">"B"</span><span class="p">)</span>
+    <span class="n">almacen</span><span class="o">.</span><span class="n">completar</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">titulo</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">almacen</span><span class="o">.</span><span class="n">listar</span><span class="p">(</span><span class="n">solo_pendientes</span><span class="o">=</span><span class="kc">True</span><span class="p">)]</span> <span class="o">==</span> <span class="p">[</span><span class="s2">"A"</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_completar_inexistente_lanza_error</span><span class="p">(</span><span class="n">almacen</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+        <span class="n">almacen</span><span class="o">.</span><span class="n">completar</span><span class="p">(</span><span class="mi">99</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="integracion-via-protocolo-cliente-mcp-real-por-stdio">Integración vía protocolo (cliente MCP real por stdio)</h3>
+<p><code>tests/test_servidor.py</code></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">anyio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span><span class="p">,</span> <span class="n">StdioServerParameters</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">anyio</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_flujo_completo</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">):</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="n">StdioServerParameters</span><span class="p">(</span>
+        <span class="n">command</span><span class="o">=</span><span class="s2">"uv"</span><span class="p">,</span>
+        <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s2">"run"</span><span class="p">,</span> <span class="s2">"server.py"</span><span class="p">],</span>
+        <span class="n">env</span><span class="o">=</span><span class="p">{</span><span class="s2">"TAREAS_ARCHIVO"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">"t.json"</span><span class="p">)},</span>
+    <span class="p">)</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">Client</span><span class="p">(</span><span class="n">params</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">nombres</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span><span class="o">.</span><span class="n">tools</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="p">{</span><span class="s2">"agregar_tarea"</span><span class="p">,</span> <span class="s2">"listar_tareas"</span><span class="p">,</span> <span class="s2">"completar_tarea"</span><span class="p">}</span> <span class="o">&lt;=</span> <span class="nb">set</span><span class="p">(</span><span class="n">nombres</span><span class="p">)</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">"agregar_tarea"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"titulo"</span><span class="p">:</span> <span class="s2">"Probar MCP"</span><span class="p">,</span> <span class="s2">"prioridad"</span><span class="p">:</span> <span class="s2">"alta"</span><span class="p">})</span>
+        <span class="k">assert</span> <span class="ow">not</span> <span class="n">r</span><span class="o">.</span><span class="n">is_error</span>
+        <span class="k">assert</span> <span class="n">r</span><span class="o">.</span><span class="n">structured_content</span><span class="p">[</span><span class="s2">"titulo"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Probar MCP"</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">"completar_tarea"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"tarea_id"</span><span class="p">:</span> <span class="mi">999</span><span class="p">})</span>
+        <span class="k">assert</span> <span class="n">r</span><span class="o">.</span><span class="n">is_error</span>  <span class="c1"># error devuelto como resultado, no como excepción</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>-q
+</code></pre></div>
+
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>Si <code>env</code> reemplaza todo el entorno en tu plataforma, añade también <code>PATH</code> (<code>{**os.environ, "TAREAS_ARCHIVO": ...}</code>).</p>
+</blockquote>
+<hr />
+<h2 id="7-mas-alla">7. Más allá</h2>
+<ul>
+<li><strong>Elicitation</strong> (<code>ctx.elicit(...)</code>): pedir confirmación al usuario antes de acciones destructivas.</li>
+<li><strong>Autenticación OAuth</strong> para servidores HTTP remotos (el SDK incluye soporte).</li>
+<li><strong>Montar en una app ASGI</strong> existente (Starlette/FastAPI) para desplegar junto a tu API.</li>
+<li><strong>FastMCP (proyecto independiente, PrefectHQ)</strong>: framework de alto nivel sobre el SDK con extras (proxies, composición, auth). Útil, pero aprende primero el SDK oficial.</li>
+</ul>
+<hr />
+<h2 id="errores-comunes">Errores comunes</h2>
+<ul>
+<li><code>print()</code> en el servidor → corrompe el protocolo stdio.</li>
+<li>Rutas relativas: el cliente lanza el proceso desde otro directorio. Usa <code>--directory</code> o rutas absolutas.</li>
+<li>Tutoriales v1 (<code>FastMCP</code>, <code>mcp.server.fastmcp</code>) mezclados con v2.</li>
+<li>Docstrings vacíos → el modelo no sabe cuándo usar la tool.</li>
+</ul>
+<h2 id="ejercicios">Ejercicios</h2>
+<ol>
+<li>Implementa el servidor y pruébalo en el Inspector.</li>
+<li>Añade la tool <code>eliminar_tarea(tarea_id)</code> que <strong>pida confirmación</strong> con elicitation (o, si tu cliente no la soporta, que exija un parámetro <code>confirmar: bool</code>).</li>
+<li>Añade un filtro <code>prioridad</code> opcional a <code>listar_tareas</code> y su test.</li>
+<li>Conéctalo a Claude Code y a OpenCode y planifica tu día con el prompt <code>planificar_dia</code>.</li>
+<li>✅ Éxito: el agente lista, crea y completa tareas solo con lenguaje natural.</li>
+</ol>
+<h2 id="checklist">Checklist</h2>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Sé crear tools, resources y prompts con <code>MCPServer</code>.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Uso salida estructurada con Pydantic.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Logging a stderr; nada en stdout.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Pruebo con Inspector y con pytest.</li>
+</ul>
+<hr />
+<p>⬅️ <a href="01-mcp-conceptos.html">05.1</a> · ➡️ <a href="03-mcp-servidor-nodejs.html">05.3 · Servidor MCP en Node.js</a></p>
+      </article>
+
+      <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+        <a href="01-mcp-conceptos.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>&larr; 05.1 · MCP (Model Context Protocol): conceptos</span></a>
+<a href="03-mcp-servidor-nodejs.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>05.3 · Servidor MCP en Node.js (TypeScript) &rarr;</span></a>
+      </div>
+
+      <footer class="text-center text-muted small mt-5 pt-3 border-top">
+        Sitio de documentación generado automáticamente &middot; Bootstrap 5 &middot; Cero pérdida de contenido
+      </footer>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // 1. Botón Toggle para ocultar/mostrar la barra lateral
+      const toggleBtn = document.getElementById('sidebarToggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+          document.body.classList.toggle('sidebar-collapsed');
+        });
+      }
+
+      // 2. Detectar URL actual dinámicamente y aplicar clase .active al enlace correspondiente
+      const currentPath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/').toLowerCase();
+      const sidebarLinks = document.querySelectorAll('#sidebarNav a.sidebar-link');
+      let matchedLink = null;
+
+      sidebarLinks.forEach(function (link) {
+        try {
+          const resolved = new URL(link.getAttribute('href'), window.location.href);
+          const linkPath = decodeURIComponent(resolved.pathname).replace(/\\/g, '/').toLowerCase();
+          if (currentPath && linkPath === currentPath) {
+            matchedLink = link;
+          }
+        } catch (e) {}
+      });
+
+      if (matchedLink) {
+        sidebarLinks.forEach(function (l) { l.classList.remove('active'); });
+        matchedLink.classList.add('active');
+        matchedLink.setAttribute('aria-current', 'page');
+        const parentCollapse = matchedLink.closest('.collapse');
+        if (parentCollapse && !parentCollapse.classList.contains('show')) {
+          parentCollapse.classList.add('show');
+        }
+        matchedLink.scrollIntoView({ block: 'nearest' });
+      } else {
+        const presetActive = document.querySelector('#sidebarNav a.sidebar-link.active');
+        if (presetActive) {
+          presetActive.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      // 3. Filtro rápido en barra lateral
+      const filterInput = document.getElementById('sidebarFilter');
+      if (filterInput) {
+        filterInput.addEventListener('input', function () {
+          const query = this.value.trim().toLowerCase();
+          const groups = document.querySelectorAll('.sidebar-group');
+          groups.forEach(function (group) {
+            const items = group.querySelectorAll('.nav-item');
+            let visibleCount = 0;
+            items.forEach(function (item) {
+              const text = item.textContent.toLowerCase();
+              const match = !query || text.includes(query);
+              item.style.display = match ? '' : 'none';
+              if (match) visibleCount++;
+            });
+            group.style.display = visibleCount > 0 ? '' : 'none';
+            if (query && visibleCount > 0) {
+              const collapseEl = group.querySelector('.collapse');
+              if (collapseEl) collapseEl.classList.add('show');
+            }
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

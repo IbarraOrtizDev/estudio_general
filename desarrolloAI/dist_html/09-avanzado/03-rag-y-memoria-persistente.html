@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>09.3 · Patrones RAG y memoria persistente — Documentación Desarrollo IA</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <style>
+    :root {
+      --sidebar-width: 310px;
+      --navbar-height: 58px;
+      --brand-primary: #0d6efd;
+      --brand-dark: #0f172a;
+      --bg-soft: #f8fafc;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-soft);
+      color: #1e293b;
+      padding-top: var(--navbar-height);
+      line-height: 1.65;
+    }
+
+    /* Top Navbar */
+    .doc-navbar {
+      height: var(--navbar-height);
+      background-color: var(--brand-dark);
+      z-index: 1040;
+    }
+
+    /* Sidebar fija en escritorio */
+    .doc-sidebar {
+      position: fixed;
+      top: var(--navbar-height);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      overflow-y: auto;
+      background-color: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      z-index: 1030;
+      transition: transform 0.25s ease, width 0.25s ease;
+    }
+
+    body.sidebar-collapsed .doc-sidebar {
+      transform: translateX(-100%);
+    }
+
+    /* Contenedor principal con margen izquierdo para la sidebar */
+    .doc-main {
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.25s ease;
+      min-height: calc(100vh - var(--navbar-height));
+    }
+
+    body.sidebar-collapsed .doc-main {
+      margin-left: 0;
+    }
+
+    /* Estilos del menú lateral */
+    .btn-toggle {
+      color: #334155;
+      background-color: #f1f5f9;
+      border: none;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-toggle:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-toggle.group-active {
+      background-color: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .sidebar-link {
+      color: #475569;
+      font-size: 0.86rem;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-link:hover {
+      color: var(--brand-primary);
+      background-color: #f1f5f9;
+    }
+
+    .sidebar-link.active {
+      color: #0d6efd !important;
+      background-color: #eff6ff !important;
+      border-left-color: #0d6efd;
+      font-weight: 600;
+    }
+
+    /* Contenido del documento */
+    .doc-content-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+    }
+
+    .doc-body h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-body h2 {
+      font-size: 1.45rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 2.2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #f1f5f9;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 1.6rem;
+      margin-bottom: 0.75rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h4, .doc-body h5, .doc-body h6 {
+      font-weight: 600;
+      color: #475569;
+      margin-top: 1.25rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-blockquote {
+      border-left: 4px solid #0d6efd;
+      background-color: #f8fafc;
+      padding: 0.9rem 1.15rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+      font-size: 0.95rem;
+      color: #334155;
+    }
+
+    .doc-blockquote p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Bloques de código y resaltado de sintaxis */
+    .codehilite {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 0.9rem 1rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .codehilite pre, pre {
+      margin: 0;
+      font-family: 'Cascadia Mono', 'Consolas', 'SFMono-Regular', Menlo, Monaco, monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    /* Diagramas ASCII / Unicode */
+    .diagram-wrapper {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+
+    .diagram-header {
+      background-color: #1e293b;
+      color: #94a3b8;
+      border-color: #334155 !important;
+    }
+
+    .diagram-wrapper .codehilite,
+    .diagram-wrapper pre {
+      background-color: transparent !important;
+      border: none !important;
+      color: #f8fafc !important;
+      padding: 1rem;
+      margin: 0;
+      line-height: 1.25;
+      font-size: 0.84rem;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: 'Cascadia Mono', 'Consolas', monospace;
+      font-size: 0.875em;
+      color: #0f172a;
+      background-color: #f1f5f9;
+      padding: 0.15em 0.38em;
+      border-radius: 0.25rem;
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    .task-list-item {
+      list-style-type: none;
+      margin-left: -1.25rem;
+    }
+
+    .toc-card ul {
+      margin-bottom: 0;
+      padding-left: 1.2rem;
+      font-size: 0.88rem;
+    }
+
+    .toc-card a {
+      text-decoration: none;
+      color: #334155;
+    }
+
+    .toc-card a:hover {
+      color: #0d6efd;
+      text-decoration: underline;
+    }
+
+    /* Responsive: en dispositivos móviles la sidebar pasa a posición relativa/apilada y el contenido ocupa 100% */
+    @media (max-width: 991.98px) {
+      .doc-sidebar {
+        position: relative;
+        top: 0;
+        width: 100%;
+        max-height: 420px;
+        border-right: none;
+        border-bottom: 1px solid #cbd5e1;
+        transform: none !important;
+      }
+
+      body.sidebar-collapsed .doc-sidebar {
+        display: none;
+      }
+
+      .doc-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+  </style>
+</head>
+<body>
+
+  <!-- Barra de navegación superior fija (fixed-top) -->
+  <nav class="navbar navbar-dark doc-navbar fixed-top shadow-sm px-3">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-light btn-sm d-flex align-items-center gap-1" id="sidebarToggle" type="button" title="Ocultar o mostrar barra lateral" aria-label="Alternar barra lateral">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+          <span class="d-none d-sm-inline small">Menú</span>
+        </button>
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2 mb-0 ms-1" href="../README.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5ZM3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.58 26.58 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.933.933 0 0 1-.765.935c-.845.147-2.34.346-4.235.346-1.895 0-3.39-.2-4.235-.346A.933.933 0 0 1 3 9.219V8.062Zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a24.767 24.767 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25.286 25.286 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135Z"/>
+            <path d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2V1.866ZM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5Z"/>
+          </svg>
+          <span>Desarrollo Agéntico con IA</span>
+        </a>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="../00-ruta-de-aprendizaje.html" class="btn btn-sm btn-outline-info d-none d-md-inline-block">Ruta de aprendizaje</a>
+        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">09-avanzado/03-rag-y-memoria-persistente.html</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Barra lateral fija (Sidebar) -->
+  <aside class="doc-sidebar shadow-sm p-3" id="docSidebar" aria-label="Navegación de documentación">
+    <div class="mb-3">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-light border-end-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+        </span>
+        <input type="search" id="sidebarFilter" class="form-control bg-light border-start-0" placeholder="Filtrar documentos..." aria-label="Filtrar documentos">
+      </div>
+    </div>
+    <nav id="sidebarNav">
+      <div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-section-0" aria-expanded="true" aria-controls="submenu-section-0"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>Inicio / Raíz</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">2</span></button>
+<div class="collapse show" id="submenu-section-0">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../README.html" title="README.html"><span class="d-block text-truncate">🤖 Desarrollo de software asistido por IA (agéntico)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../00-ruta-de-aprendizaje.html" title="00-ruta-de-aprendizaje.html"><span class="d-block text-truncate">00 · Ruta de aprendizaje</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-01-fundamentos-1" aria-expanded="true" aria-controls="submenu-01-fundamentos-1"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>01-fundamentos</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-01-fundamentos-1">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-fundamentos/01-que-es-el-desarrollo-agentico.html" title="01-fundamentos/01-que-es-el-desarrollo-agentico.html"><span class="d-block text-truncate">01.1 · ¿Qué es el desarrollo agéntico?</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-fundamentos/02-llms-contexto-y-tokens.html" title="01-fundamentos/02-llms-contexto-y-tokens.html"><span class="d-block text-truncate">01.2 · LLMs, contexto y tokens (lo que necesitas saber)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-fundamentos/03-context-engineering-e-instrucciones.html" title="01-fundamentos/03-context-engineering-e-instrucciones.html"><span class="d-block text-truncate">01.3 · Context engineering e instrucciones (CLAUDE.md, AGENTS.md, rules)</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-02-flujos-de-trabajo-2" aria-expanded="true" aria-controls="submenu-02-flujos-de-trabajo-2"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>02-flujos-de-trabajo</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">2</span></button>
+<div class="collapse show" id="submenu-02-flujos-de-trabajo-2">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../02-flujos-de-trabajo/01-flujos-de-trabajo-agenticos.html" title="02-flujos-de-trabajo/01-flujos-de-trabajo-agenticos.html"><span class="d-block text-truncate">02.1 · Flujos de trabajo agénticos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../02-flujos-de-trabajo/02-seguridad-y-buenas-practicas.html" title="02-flujos-de-trabajo/02-seguridad-y-buenas-practicas.html"><span class="d-block text-truncate">02.2 · Seguridad y buenas prácticas</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-03-herramientas-3" aria-expanded="true" aria-controls="submenu-03-herramientas-3"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>03-herramientas</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-03-herramientas-3">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../03-herramientas/01-claude-code.html" title="03-herramientas/01-claude-code.html"><span class="d-block text-truncate">03.1 · Claude Code</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../03-herramientas/02-opencode.html" title="03-herramientas/02-opencode.html"><span class="d-block text-truncate">03.2 · OpenCode</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../03-herramientas/03-comparativa-claude-code-vs-opencode.html" title="03-herramientas/03-comparativa-claude-code-vs-opencode.html"><span class="d-block text-truncate">03.3 · Comparativa: Claude Code vs OpenCode</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-04-extensibilidad-4" aria-expanded="true" aria-controls="submenu-04-extensibilidad-4"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>04-extensibilidad</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-04-extensibilidad-4">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../04-extensibilidad/01-skills.html" title="04-extensibilidad/01-skills.html"><span class="d-block text-truncate">04.1 · Skills</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../04-extensibilidad/02-agentes-y-subagentes.html" title="04-extensibilidad/02-agentes-y-subagentes.html"><span class="d-block text-truncate">04.2 · Agentes y subagentes</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../04-extensibilidad/03-hooks-comandos-y-plugins.html" title="04-extensibilidad/03-hooks-comandos-y-plugins.html"><span class="d-block text-truncate">04.3 · Hooks, comandos y plugins</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-05-mcp-5" aria-expanded="true" aria-controls="submenu-05-mcp-5"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>05-mcp</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">6</span></button>
+<div class="collapse show" id="submenu-05-mcp-5">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/01-mcp-conceptos.html" title="05-mcp/01-mcp-conceptos.html"><span class="d-block text-truncate">05.1 · MCP (Model Context Protocol): conceptos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/02-mcp-servidor-python.html" title="05-mcp/02-mcp-servidor-python.html"><span class="d-block text-truncate">05.2 · Servidor MCP en Python</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/03-mcp-servidor-nodejs.html" title="05-mcp/03-mcp-servidor-nodejs.html"><span class="d-block text-truncate">05.3 · Servidor MCP en Node.js (TypeScript)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/04-mcp-servidor-csharp.html" title="05-mcp/04-mcp-servidor-csharp.html"><span class="d-block text-truncate">05.4 · Servidor MCP en C# (.NET)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/05-mcp-clientes-python-node-csharp.html" title="05-mcp/05-mcp-clientes-python-node-csharp.html"><span class="d-block text-truncate">05.5 · Clientes MCP en Python, Node.js y C# (y tu propio agente)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/06-mcp-configuracion-en-clientes.html" title="05-mcp/06-mcp-configuracion-en-clientes.html"><span class="d-block text-truncate">05.6 · Configurar servidores MCP en clientes (Claude Code, OpenCode, VS Code, Claude Desktop)</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-06-spec-driven-6" aria-expanded="true" aria-controls="submenu-06-spec-driven-6"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>06-spec-driven</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">1</span></button>
+<div class="collapse show" id="submenu-06-spec-driven-6">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../06-spec-driven/01-openspec.html" title="06-spec-driven/01-openspec.html"><span class="d-block text-truncate">06.1 · OpenSpec y spec-driven development</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-07-testing-7" aria-expanded="true" aria-controls="submenu-07-testing-7"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>07-testing</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-07-testing-7">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../07-testing/01-pruebas-unitarias-con-ia.html" title="07-testing/01-pruebas-unitarias-con-ia.html"><span class="d-block text-truncate">07.1 · Pruebas unitarias con IA (Python, TypeScript, C# y en el navegador)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../07-testing/02-playwright-e2e-fundamentos.html" title="07-testing/02-playwright-e2e-fundamentos.html"><span class="d-block text-truncate">07.2 · Playwright E2E: fundamentos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../07-testing/03-playwright-con-ia-mcp-y-test-agents.html" title="07-testing/03-playwright-con-ia-mcp-y-test-agents.html"><span class="d-block text-truncate">07.3 · Playwright con IA: Playwright MCP y Playwright Test Agents</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-08-proyecto-integrador-8" aria-expanded="true" aria-controls="submenu-08-proyecto-integrador-8"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>08-proyecto-integrador</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">1</span></button>
+<div class="collapse show" id="submenu-08-proyecto-integrador-8">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../08-proyecto-integrador/01-proyecto-integrador.html" title="08-proyecto-integrador/01-proyecto-integrador.html"><span class="d-block text-truncate">08 · Proyecto integrador: &quot;TaskFlow&quot; de principio a fin</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold group-active" type="button" data-bs-toggle="collapse" data-bs-target="#submenu-09-avanzado-9" aria-expanded="true" aria-controls="submenu-09-avanzado-9"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>09-avanzado</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-09-avanzado-9">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="01-aislamiento-sandbox-devcontainers-docker.html" title="09-avanzado/01-aislamiento-sandbox-devcontainers-docker.html"><span class="d-block text-truncate">09.1 · Aislamiento serio: sandbox, Dev Containers y Docker Sandboxes</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="02-evaluacion-y-observabilidad.html" title="09-avanzado/02-evaluacion-y-observabilidad.html"><span class="d-block text-truncate">09.2 · Evaluación y observabilidad de agentes</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link active py-1 px-3 rounded-2" href="03-rag-y-memoria-persistente.html" aria-current="page" title="09-avanzado/03-rag-y-memoria-persistente.html"><span class="d-block text-truncate">09.3 · Patrones RAG y memoria persistente</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-plantillas-10" aria-expanded="true" aria-controls="submenu-plantillas-10"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>plantillas</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">16</span></button>
+<div class="collapse show" id="submenu-plantillas-10">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/AGENTS.html" title="plantillas/AGENTS.html"><span class="d-block text-truncate">Proyecto: &lt;NOMBRE&gt;</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/agents/code-reviewer.html" title="plantillas/claude-code/.claude/agents/code-reviewer.html"><span class="d-block text-truncate">code-reviewer (claude-code/.claude/agents/code-reviewer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/agents/code-reviewer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/agents/e2e-tester.html" title="plantillas/claude-code/.claude/agents/e2e-tester.html"><span class="d-block text-truncate">e2e-tester (claude-code/.claude/agents/e2e-tester.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/agents/e2e-tester.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/agents/test-writer.html" title="plantillas/claude-code/.claude/agents/test-writer.html"><span class="d-block text-truncate">test-writer (claude-code/.claude/agents/test-writer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/agents/test-writer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/skills/crear-endpoint/SKILL.html" title="plantillas/claude-code/.claude/skills/crear-endpoint/SKILL.html"><span class="d-block text-truncate">Crear endpoint REST</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/skills/crear-endpoint/SKILL.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/skills/release/SKILL.html" title="plantillas/claude-code/.claude/skills/release/SKILL.html"><span class="d-block text-truncate">SKILL (claude-code/.claude/skills/release/SKILL.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/skills/release/SKILL.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/CLAUDE.html" title="plantillas/CLAUDE.html"><span class="d-block text-truncate">CLAUDE</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/agents/reviewer.html" title="plantillas/opencode/.opencode/agents/reviewer.html"><span class="d-block text-truncate">reviewer (opencode/.opencode/agents/reviewer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/agents/reviewer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/agents/test-writer.html" title="plantillas/opencode/.opencode/agents/test-writer.html"><span class="d-block text-truncate">test-writer (opencode/.opencode/agents/test-writer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/agents/test-writer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/commands/fix-issue.html" title="plantillas/opencode/.opencode/commands/fix-issue.html"><span class="d-block text-truncate">fix-issue (opencode/.opencode/commands/fix-issue.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/commands/fix-issue.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/commands/review.html" title="plantillas/opencode/.opencode/commands/review.html"><span class="d-block text-truncate">review (opencode/.opencode/commands/review.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/commands/review.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/design.html" title="plantillas/openspec/changes/nombre-del-cambio/design.html"><span class="d-block text-truncate">Diseño: &lt;título del cambio&gt;</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/design.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/proposal.html" title="plantillas/openspec/changes/nombre-del-cambio/proposal.html"><span class="d-block text-truncate">Propuesta: &lt;título del cambio&gt;</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/proposal.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/specs/capacidad/spec.html" title="plantillas/openspec/changes/nombre-del-cambio/specs/capacidad/spec.html"><span class="d-block text-truncate">spec (openspec/changes/nombre-del-cambio/specs/capacidad/spec.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/specs/capacidad/spec.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/tasks.html" title="plantillas/openspec/changes/nombre-del-cambio/tasks.html"><span class="d-block text-truncate">tasks (openspec/changes/nombre-del-cambio/tasks.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/tasks.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/README.html" title="plantillas/README.html"><span class="d-block text-truncate">Plantillas reutilizables</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-referencia-11" aria-expanded="true" aria-controls="submenu-referencia-11"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>referencia</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">7</span></button>
+<div class="collapse show" id="submenu-referencia-11">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-claude-code.html" title="referencia/cheatsheet-claude-code.html"><span class="d-block text-truncate">Cheatsheet · Claude Code</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-mcp.html" title="referencia/cheatsheet-mcp.html"><span class="d-block text-truncate">Cheatsheet · MCP (spec 2026-07-28, SDK v2)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-opencode.html" title="referencia/cheatsheet-opencode.html"><span class="d-block text-truncate">Cheatsheet · OpenCode 2.x</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-openspec.html" title="referencia/cheatsheet-openspec.html"><span class="d-block text-truncate">Cheatsheet · OpenSpec 1.x</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-playwright.html" title="referencia/cheatsheet-playwright.html"><span class="d-block text-truncate">Cheatsheet · Playwright</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/glosario.html" title="referencia/glosario.html"><span class="d-block text-truncate">Glosario (inglés → español)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/recursos-y-fuentes.html" title="referencia/recursos-y-fuentes.html"><span class="d-block text-truncate">Recursos y fuentes oficiales</span></a></li>
+</ul>
+</div>
+</div>
+    </nav>
+  </aside>
+
+  <!-- Contenedor principal de contenido -->
+  <main class="doc-main p-3 p-md-4 p-lg-5">
+    <div class="container-xxl">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-white px-3 py-2 rounded-3 shadow-sm border mb-0 small">
+          <li class="breadcrumb-item"><a href="../README.html" class="text-decoration-none">Inicio</a></li>
+<li class="breadcrumb-item text-muted">09-avanzado</li>
+<li class="breadcrumb-item active fw-semibold" aria-current="page">03-rag-y-memoria-persistente.html</li>
+        </ol>
+      </nav>
+
+      
+        <div class="card border-0 shadow-sm mb-4 toc-card">
+          <div class="card-body py-2 px-3">
+            <button class="btn btn-sm btn-link text-decoration-none text-dark fw-semibold p-0 d-flex align-items-center gap-2 w-100 justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#pageTocCollapse" aria-expanded="false" aria-controls="pageTocCollapse">
+              <span class="d-flex align-items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                </svg>
+                Contenido de esta página
+              </span>
+              <span class="small text-muted">Mostrar / Ocultar</span>
+            </button>
+            <div class="collapse mt-2" id="pageTocCollapse">
+              <div class="toc">
+<ul>
+<li><a href="#093-patrones-rag-y-memoria-persistente">09.3 · Patrones RAG y memoria persistente</a><ul>
+<li><a href="#objetivos">Objetivos</a></li>
+<li><a href="#1-el-problema">1. El problema</a></li>
+<li><a href="#2-rag-vs-busqueda-agentica-para-codigo">2. RAG vs búsqueda agéntica (para código)</a></li>
+<li><a href="#3-pipeline-rag">3. Pipeline RAG</a></li>
+<li><a href="#4-practica-rag-local-expuesto-como-servidor-mcp-python">4. Práctica: RAG local expuesto como servidor MCP (Python)</a><ul>
+<li><a href="#41-indexador">4.1 Indexador</a></li>
+<li><a href="#42-servidor-mcp">4.2 Servidor MCP</a></li>
+<li><a href="#43-conectarlo">4.3 Conectarlo</a></li>
+<li><a href="#44-mejoras-para-produccion">4.4 Mejoras para producción</a></li>
+</ul>
+</li>
+<li><a href="#5-evaluar-rag">5. Evaluar RAG</a></li>
+<li><a href="#6-memoria-persistente-conceptos">6. Memoria persistente: conceptos</a></li>
+<li><a href="#7-memoria-en-claude-code">7. Memoria en Claude Code</a><ul>
+<li><a href="#71-archivos-que-escribes-tu-claudemd-y-rules">7.1 Archivos que escribes tú (CLAUDE.md y rules)</a></li>
+<li><a href="#72-auto-memory-notas-que-escribe-claude">7.2 Auto memory (notas que escribe Claude)</a></li>
+</ul>
+</li>
+<li><a href="#8-memoria-en-opencode">8. Memoria en OpenCode</a></li>
+<li><a href="#9-servidores-mcp-de-memoria">9. Servidores MCP de memoria</a></li>
+<li><a href="#10-memoria-en-tus-propios-agentes-memory-tool-de-la-api-de-claude">10. Memoria en tus propios agentes: memory tool de la API de Claude</a></li>
+<li><a href="#11-arquitectura-de-referencia-agente-con-rag-memoria">11. Arquitectura de referencia: agente con RAG + memoria</a></li>
+<li><a href="#errores-comunes">Errores comunes</a></li>
+<li><a href="#ejercicios">Ejercicios</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+            </div>
+          </div>
+        </div>
+        
+
+      <article class="doc-content-card shadow-sm p-4 p-md-5 doc-body">
+        <h1 id="093-patrones-rag-y-memoria-persistente">09.3 · Patrones RAG y memoria persistente</h1>
+<h2 id="objetivos">Objetivos</h2>
+<ul>
+<li>Entender <strong>RAG</strong> (<em>Retrieval-Augmented Generation</em>) y cuándo conviene frente a la <strong>búsqueda agéntica</strong>.</li>
+<li>Construir un pipeline RAG: <em>chunking</em>, <em>embeddings</em>, base vectorial, búsqueda híbrida, <em>reranking</em>.</li>
+<li>Exponer RAG a tus agentes como <strong>servidor MCP</strong>.</li>
+<li>Diseñar <strong>memoria persistente</strong>: en Claude Code (CLAUDE.md, rules, auto memory), en OpenCode, con servidores MCP de memoria y con la <strong>memory tool</strong> de la API de Claude.</li>
+<li>Evaluar la calidad de la recuperación.</li>
+</ul>
+<hr />
+<h2 id="1-el-problema">1. El problema</h2>
+<p>Un LLM solo "sabe" lo que trae de su entrenamiento y lo que hay en su <strong>ventana de contexto</strong>. Dos necesidades distintas:</p>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Necesidad</th>
+<th>Solución</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Consultar <strong>mucho conocimiento</strong> que no cabe en el contexto (docs internas, wikis, tickets, normativas)</td>
+<td><strong>RAG</strong>: recuperar solo los fragmentos relevantes en cada pregunta</td>
+</tr>
+<tr>
+<td><strong>Recordar</strong> entre sesiones (decisiones, preferencias, lo aprendido)</td>
+<td><strong>Memoria persistente</strong>: el agente escribe y relee notas</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="2-rag-vs-busqueda-agentica-para-codigo">2. RAG vs búsqueda agéntica (para código)</h2>
+<p>Los agentes de código como Claude Code y OpenCode <strong>no indexan tu repo con embeddings por defecto</strong>: exploran con herramientas (<code>Glob</code>, <code>Grep</code>, <code>Read</code>) como haría un desarrollador. Esto se llama <strong>búsqueda agéntica</strong> (<em>agentic search</em>).</p>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Enfoque</th>
+<th>Ventajas</th>
+<th>Desventajas</th>
+<th>Úsalo para</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Búsqueda agéntica</strong> (grep/glob/read)</td>
+<td>Siempre actualizada, exacta, sin infraestructura</td>
+<td>Más iteraciones; peor con lenguaje vago</td>
+<td><strong>Código</strong> del repo actual</td>
+</tr>
+<tr>
+<td><strong>RAG semántico</strong></td>
+<td>Encuentra por significado, escala a millones de documentos</td>
+<td>Índice que mantener; puede recuperar texto desactualizado o irrelevante</td>
+<td><strong>Documentación</strong> extensa, tickets, conocimiento no presente en el repo</td>
+</tr>
+<tr>
+<td><strong>Híbrido</strong></td>
+<td>Lo mejor de ambos</td>
+<td>Más complejidad</td>
+<td>Monorepos enormes + docs</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p><strong>Regla práctica:</strong> para el código de tu repo, confía en la búsqueda agéntica + buenas instrucciones. Usa RAG para conocimiento <strong>externo al repo</strong> y expónlo vía MCP.</p>
+</blockquote>
+<p>Alternativas antes de construir RAG:</p>
+<ul>
+<li><strong>MCP de documentación</strong> ya existentes (p. ej. Context7 para librerías).</li>
+<li><strong>Skills</strong> con archivos de referencia (si el conocimiento es pequeño y estable).</li>
+<li>Poner los documentos en el repo (<code>docs/</code>) y dejar que el agente los busque con grep.</li>
+</ul>
+<hr />
+<h2 id="3-pipeline-rag">3. Pipeline RAG</h2>
+<div class="diagram-wrapper shadow-sm rounded-3 my-3"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-1 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama SVG · Pipeline RAG (Indexación y Consulta)</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">SVG</span></div><div class="diagram-svg-body" style="background:#0f172a;padding:1.25rem 1rem;overflow-x:auto;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 280" width="100%" style="max-width:940px;height:auto;" role="img" aria-label="Pipeline RAG: Indexación offline y Consulta online"><defs><marker id="arrow-sky" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#38bdf8"/></marker><marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#34d399"/></marker><marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#fbbf24"/></marker><marker id="arrow-violet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#a78bfa"/></marker><marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#94a3b8"/></marker></defs><rect x="16" y="14" width="908" height="118" rx="10" fill="#0f172a" stroke="#334155" stroke-width="1.5"/><rect x="30" y="24" width="180" height="24" rx="6" fill="#0284c7"/><text x="120" y="40" text-anchor="middle" fill="#ffffff" font-family="Segoe UI, Roboto, sans-serif" font-size="12" font-weight="700">INDEXACIÓN (offline)</text><rect x="30" y="58" width="120" height="54" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/><text x="90.0" y="89.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Documentos</text><line x1="150" y1="85" x2="178" y2="85" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="178" y="58" width="110" height="54" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/><text x="233.0" y="89.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Limpieza</text><line x1="288" y1="85" x2="316" y2="85" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="316" y="58" width="110" height="54" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/><text x="371.0" y="89.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Chunking</text><line x1="426" y1="85" x2="454" y2="85" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="454" y="54" width="220" height="62" rx="8" fill="#1e293b" stroke="#818cf8" stroke-width="1.6"/><text x="564.0" y="80.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Embeddings</text><text x="564.0" y="98.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="11" font-weight="500">(+ metadatos: fuente, fecha, sección)</text><line x1="674" y1="85" x2="702" y2="85" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="702" y="54" width="205" height="62" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.6"/><text x="804.5" y="80.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Base vectorial</text><text x="804.5" y="98.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="12" font-weight="500">(+ índice BM25)</text><rect x="16" y="148" width="908" height="118" rx="10" fill="#0f172a" stroke="#334155" stroke-width="1.5"/><rect x="30" y="158" width="165" height="24" rx="6" fill="#7c3aed"/><text x="112" y="174" text-anchor="middle" fill="#ffffff" font-family="Segoe UI, Roboto, sans-serif" font-size="12" font-weight="700">CONSULTA (online)</text><rect x="30" y="192" width="100" height="56" rx="8" fill="#1e293b" stroke="#a78bfa" stroke-width="1.6"/><text x="80.0" y="224.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Pregunta</text><line x1="130" y1="220" x2="152" y2="220" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrow-violet)"/><rect x="152" y="192" width="115" height="56" rx="8" fill="#1e293b" stroke="#a78bfa" stroke-width="1.6"/><text x="209.5" y="224.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">(reescritura)</text><line x1="267" y1="220" x2="289" y2="220" stroke="#a78bfa" stroke-width="2" marker-end="url(#arrow-violet)"/><rect x="289" y="190" width="205" height="60" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/><text x="391.5" y="215.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="12" font-weight="700">Búsqueda híbrida</text><text x="391.5" y="233.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="11" font-weight="500">(vectorial + palabras clave)</text><line x1="494" y1="220" x2="516" y2="220" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="516" y="192" width="100" height="56" rx="8" fill="#1e293b" stroke="#fbbf24" stroke-width="1.6"/><text x="566.0" y="224.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Reranking</text><line x1="616" y1="220" x2="638" y2="220" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-amber)"/><rect x="638" y="192" width="120" height="56" rx="8" fill="#1e293b" stroke="#fbbf24" stroke-width="1.6"/><text x="698.0" y="215.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Top-k</text><text x="698.0" y="233.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="12" font-weight="500">fragmentos</text><line x1="758" y1="220" x2="780" y2="220" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-emerald)"/><rect x="780" y="190" width="130" height="60" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.6"/><text x="845.0" y="215.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="12" font-weight="700">LLM responde</text><text x="845.0" y="233.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="11" font-weight="500">CITANDO fuentes</text></svg></div><div class="d-none"><pre><code>
+ Documentos ─► Limpieza ─► Chunking ─► Embeddings ─► Base vectorial (+ índice BM25)
+                                         (+ metadatos: fuente, fecha, sección)
+
+CONSULTA (online)
+ Pregunta ─► (reescritura) ─► Búsqueda híbrida (vectorial + palabras clave)
+          ─► Reranking ─► Top-k fragmentos ─► LLM responde CITANDO fuentes
+</code></pre></div></div>
+
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Etapa</th>
+<th>Decisiones clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Chunking</strong></td>
+<td>Tamaño (≈ 300–800 tokens), solapamiento (10–20%), cortar por estructura (títulos, funciones) mejor que por caracteres</td>
+</tr>
+<tr>
+<td><strong>Embeddings</strong></td>
+<td>Modelo (local como <code>all-MiniLM</code>/<code>bge</code>, o API como Voyage AI u OpenAI); <strong>misma</strong> función para indexar y consultar</td>
+</tr>
+<tr>
+<td><strong>Base vectorial</strong></td>
+<td>Chroma, Qdrant, <strong>pgvector</strong> (Postgres), SQLite-vec, Azure AI Search, etc.</td>
+</tr>
+<tr>
+<td><strong>Búsqueda híbrida</strong></td>
+<td>Combinar similitud vectorial con BM25 (palabras exactas, códigos, nombres propios)</td>
+</tr>
+<tr>
+<td><strong>Reranking</strong></td>
+<td>Un modelo reordena los candidatos; mejora mucho la precisión</td>
+</tr>
+<tr>
+<td><strong>Contextual retrieval</strong></td>
+<td>Antes de indexar, añadir a cada chunk un breve resumen de su contexto en el documento; reduce fallos de recuperación</td>
+</tr>
+<tr>
+<td><strong>Generación</strong></td>
+<td>Instruir al modelo: "responde solo con los fragmentos; si no está, dilo; cita la fuente"</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="4-practica-rag-local-expuesto-como-servidor-mcp-python">4. Práctica: RAG local expuesto como servidor MCP (Python)</h2>
+<p>Construiremos un servidor MCP <code>docs</code> que indexa la carpeta <code>docs/</code> (Markdown) con <strong>Chroma</strong> (embeddings locales, sin API key) y expone la tool <code>buscar_docs</code>.</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>init<span class="w"> </span>mcp-docs<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>mcp-docs
+uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"mcp[cli]"</span><span class="w"> </span>chromadb
+mkdir<span class="w"> </span>docs<span class="w">   </span><span class="c1"># pon aquí tus .md (puedes copiar esta misma guía para probar)</span>
+</code></pre></div>
+
+<h3 id="41-indexador">4.1 Indexador</h3>
+<p><code>indexar.py</code></p>
+<div class="codehilite"><pre><span></span><code><span class="sd">"""Indexa docs/*.md en Chroma, cortando por títulos Markdown."""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">chromadb</span>
+
+<span class="n">CARPETA</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"docs"</span><span class="p">)</span>
+<span class="n">cliente</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">".chroma"</span><span class="p">)</span>
+<span class="n">coleccion</span> <span class="o">=</span> <span class="n">cliente</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="s2">"docs"</span><span class="p">)</span>   <span class="c1"># usa la función de embeddings por defecto (local)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">trocear</span><span class="p">(</span><span class="n">texto</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""Devuelve (titulo_seccion, contenido) cortando por encabezados ## y ###."""</span>
+    <span class="n">partes</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">"(?m)^(#{2,3} .+)$"</span><span class="p">,</span> <span class="n">texto</span><span class="p">)</span>
+    <span class="n">trozos</span><span class="p">,</span> <span class="n">titulo</span> <span class="o">=</span> <span class="p">[],</span> <span class="s2">"Introducción"</span>
+    <span class="k">for</span> <span class="n">parte</span> <span class="ow">in</span> <span class="n">partes</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^#{2,3} "</span><span class="p">,</span> <span class="n">parte</span><span class="p">):</span>
+            <span class="n">titulo</span> <span class="o">=</span> <span class="n">parte</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"# "</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">parte</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">parte</span><span class="p">),</span> <span class="n">max_chars</span><span class="p">):</span>  <span class="c1"># secciones muy largas → sub-trozos</span>
+                <span class="n">trozos</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">titulo</span><span class="p">,</span> <span class="n">parte</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">max_chars</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+    <span class="k">return</span> <span class="n">trozos</span>
+
+
+<span class="n">ids</span><span class="p">,</span> <span class="n">documentos</span><span class="p">,</span> <span class="n">metadatos</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[],</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">archivo</span> <span class="ow">in</span> <span class="n">CARPETA</span><span class="o">.</span><span class="n">rglob</span><span class="p">(</span><span class="s2">"*.md"</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="p">(</span><span class="n">titulo</span><span class="p">,</span> <span class="n">contenido</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">trocear</span><span class="p">(</span><span class="n">archivo</span><span class="o">.</span><span class="n">read_text</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">))):</span>
+        <span class="n">ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">archivo</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="c1"># "contextual retrieval" simple: anteponer archivo y sección al texto indexado</span>
+        <span class="n">documentos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Archivo: </span><span class="si">{</span><span class="n">archivo</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> · Sección: </span><span class="si">{</span><span class="n">titulo</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">contenido</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">metadatos</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"fuente"</span><span class="p">:</span> <span class="n">archivo</span><span class="o">.</span><span class="n">as_posix</span><span class="p">(),</span> <span class="s2">"seccion"</span><span class="p">:</span> <span class="n">titulo</span><span class="p">})</span>
+
+<span class="n">coleccion</span><span class="o">.</span><span class="n">upsert</span><span class="p">(</span><span class="n">ids</span><span class="o">=</span><span class="n">ids</span><span class="p">,</span> <span class="n">documents</span><span class="o">=</span><span class="n">documentos</span><span class="p">,</span> <span class="n">metadatas</span><span class="o">=</span><span class="n">metadatos</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Indexados </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span><span class="si">}</span><span class="s2"> fragmentos de </span><span class="si">{</span><span class="n">CARPETA</span><span class="si">}</span><span class="s2">/"</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>indexar.py
+</code></pre></div>
+
+<h3 id="42-servidor-mcp">4.2 Servidor MCP</h3>
+<p><code>server.py</code></p>
+<div class="codehilite"><pre><span></span><code><span class="sd">"""Servidor MCP 'docs': búsqueda semántica sobre la documentación indexada."""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">chromadb</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCPServer</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>   <span class="c1"># stderr</span>
+<span class="n">coleccion</span> <span class="o">=</span> <span class="n">chromadb</span><span class="o">.</span><span class="n">PersistentClient</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">".chroma"</span><span class="p">)</span><span class="o">.</span><span class="n">get_or_create_collection</span><span class="p">(</span><span class="s2">"docs"</span><span class="p">)</span>
+<span class="n">mcp</span> <span class="o">=</span> <span class="n">MCPServer</span><span class="p">(</span><span class="s2">"docs"</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Fragmento</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">fuente</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">seccion</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">texto</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">distancia</span><span class="p">:</span> <span class="nb">float</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Resultados</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">consulta</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">fragmentos</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Fragmento</span><span class="p">]</span>
+
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">buscar_docs</span><span class="p">(</span><span class="n">consulta</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Resultados</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Busca en la documentación interna del equipo por significado.</span>
+
+<span class="sd">    Úsala para preguntas sobre procesos, arquitectura, convenciones o decisiones</span>
+<span class="sd">    documentadas que NO estén en el código. Cita siempre la `fuente` en tu respuesta.</span>
+<span class="sd">    Si los fragmentos no responden la pregunta, dilo en lugar de inventar.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        consulta: Pregunta o tema en lenguaje natural.</span>
+<span class="sd">        k: Número de fragmentos (1-10).</span>
+<span class="sd">    """</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">coleccion</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">query_texts</span><span class="o">=</span><span class="p">[</span><span class="n">consulta</span><span class="p">],</span> <span class="n">n_results</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+    <span class="n">fragmentos</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">Fragmento</span><span class="p">(</span><span class="n">fuente</span><span class="o">=</span><span class="n">m</span><span class="p">[</span><span class="s2">"fuente"</span><span class="p">],</span> <span class="n">seccion</span><span class="o">=</span><span class="n">m</span><span class="p">[</span><span class="s2">"seccion"</span><span class="p">],</span> <span class="n">texto</span><span class="o">=</span><span class="n">d</span><span class="p">[:</span><span class="mi">1500</span><span class="p">],</span> <span class="n">distancia</span><span class="o">=</span><span class="nb">round</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">"documents"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s2">"metadatas"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s2">"distances"</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">Resultados</span><span class="p">(</span><span class="n">consulta</span><span class="o">=</span><span class="n">consulta</span><span class="p">,</span> <span class="n">fragmentos</span><span class="o">=</span><span class="n">fragmentos</span><span class="p">)</span>
+
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">"docs://fuentes"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fuentes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Lista de archivos indexados."""</span>
+    <span class="n">metas</span> <span class="o">=</span> <span class="n">coleccion</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">include</span><span class="o">=</span><span class="p">[</span><span class="s2">"metadatas"</span><span class="p">])[</span><span class="s2">"metadatas"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">({</span><span class="n">m</span><span class="p">[</span><span class="s2">"fuente"</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">metas</span><span class="p">}))</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">mcp</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+
+<h3 id="43-conectarlo">4.3 Conectarlo</h3>
+<div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>docs<span class="w"> </span>--<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>--directory<span class="w"> </span>/ruta/absoluta/mcp-docs<span class="w"> </span>server.py
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>// OpenCode
+{ "mcp": { "servers": { "docs": { "type": "local", "command": ["uv", "run", "--directory", "/ruta/absoluta/mcp-docs", "server.py"] } } } }
+</code></pre></div>
+
+<p>Prueba: <em>"Según la documentación del equipo, ¿cómo se escriben los requisitos en OpenSpec? Cita la fuente."</em></p>
+<h3 id="44-mejoras-para-produccion">4.4 Mejoras para producción</h3>
+<ul>
+<li><strong>Reindexado incremental</strong> (por hash o fecha de modificación) y un job programado/CI.</li>
+<li><strong>Búsqueda híbrida</strong> (BM25 + vectores) y <strong>reranking</strong>.</li>
+<li><strong>Filtros por metadatos</strong> (proyecto, fecha, equipo) → parámetros de la tool.</li>
+<li><strong>Control de acceso</strong>: no devuelvas documentos que el usuario no puede ver.</li>
+<li><strong>Base vectorial gestionada</strong> (pgvector en tu Postgres, Qdrant, Azure AI Search).</li>
+<li>Variantes en <strong>Node</strong> (<code>registerTool</code> + cliente de tu base vectorial) o <strong>C#</strong> (<code>Microsoft.Extensions.VectorData</code> + <code>[McpServerTool]</code>) siguiendo los módulos 05.3 y 05.4.</li>
+</ul>
+<hr />
+<h2 id="5-evaluar-rag">5. Evaluar RAG</h2>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Pregunta</th>
+<th>Cómo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Recall@k</strong></td>
+<td>¿Está el fragmento correcto entre los k recuperados?</td>
+<td>Dataset pregunta → fuente esperada; grader por código</td>
+</tr>
+<tr>
+<td><strong>Precisión / MRR</strong></td>
+<td>¿Aparece arriba?</td>
+<td>Posición del primer acierto</td>
+</tr>
+<tr>
+<td><strong>Fidelidad</strong> (<em>faithfulness</em>)</td>
+<td>¿La respuesta se apoya solo en los fragmentos?</td>
+<td>LLM-as-judge con rúbrica</td>
+</tr>
+<tr>
+<td><strong>Relevancia de respuesta</strong></td>
+<td>¿Responde lo preguntado?</td>
+<td>LLM-as-judge / humano</td>
+</tr>
+</tbody>
+</table></div>
+<p>Eval mínima de recall:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">server</span><span class="w"> </span><span class="kn">import</span> <span class="n">buscar_docs</span>
+
+<span class="n">casos</span> <span class="o">=</span> <span class="p">[</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"evals/rag.jsonl"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)]</span>
+<span class="c1"># {"pregunta": "¿Qué es un delta spec?", "fuente": "docs/06-spec-driven/01-openspec.md"}</span>
+<span class="n">aciertos</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">any</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">fuente</span> <span class="o">==</span> <span class="n">c</span><span class="p">[</span><span class="s2">"fuente"</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">buscar_docs</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s2">"pregunta"</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">fragmentos</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">casos</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Recall@5: </span><span class="si">{</span><span class="n">aciertos</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">casos</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Herramientas especializadas: <strong>Ragas</strong>, DeepEval, promptfoo, Langfuse (ver <a href="02-evaluacion-y-observabilidad.html">09.2</a>).</p>
+<hr />
+<h2 id="6-memoria-persistente-conceptos">6. Memoria persistente: conceptos</h2>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Tipo de memoria</th>
+<th>Contenido</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Procedimental</strong></td>
+<td>Cómo hacer las cosas</td>
+<td><code>AGENTS.md</code>, skills, rules</td>
+</tr>
+<tr>
+<td><strong>Semántica</strong></td>
+<td>Hechos del proyecto/dominio</td>
+<td>"La API usa cursor, no offset"</td>
+</tr>
+<tr>
+<td><strong>Episódica</strong></td>
+<td>Qué pasó en sesiones previas</td>
+<td>"El 10/11 migramos a SDK v2; falló X por Y"</td>
+</tr>
+<tr>
+<td><strong>Preferencias</strong></td>
+<td>Gustos del usuario</td>
+<td>"Respuestas en español; commits convencionales"</td>
+</tr>
+</tbody>
+</table></div>
+<p>Principios:</p>
+<ol>
+<li><strong>Memoria = archivos legibles y versionables</strong> siempre que se pueda (auditar, editar, borrar).</li>
+<li><strong>Índice corto + detalle bajo demanda</strong> (como las skills): no cargar todo en cada sesión.</li>
+<li><strong>Curar</strong>: la memoria se degrada; revisa y poda periódicamente.</li>
+<li><strong>Seguridad</strong>: nunca guardar secretos; cuidado con <em>memory poisoning</em> (contenido malicioso que se "recuerda" y se reutiliza).</li>
+</ol>
+<hr />
+<h2 id="7-memoria-en-claude-code">7. Memoria en Claude Code</h2>
+<p>Claude Code tiene <strong>dos sistemas</strong>, ambos cargados al inicio de la sesión como contexto (no como reglas impuestas; para eso usa hooks o permisos):</p>
+<h3 id="71-archivos-que-escribes-tu-claudemd-y-rules">7.1 Archivos que escribes tú (CLAUDE.md y rules)</h3>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Ámbito</th>
+<th>Ubicación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Organización</td>
+<td><code>/etc/claude-code/CLAUDE.md</code> (Linux/WSL), <code>C:\Program Files\ClaudeCode\CLAUDE.md</code> (Windows)</td>
+</tr>
+<tr>
+<td>Usuario</td>
+<td><code>~/.claude/CLAUDE.md</code></td>
+</tr>
+<tr>
+<td>Proyecto</td>
+<td><code>./CLAUDE.md</code> o <code>./.claude/CLAUDE.md</code></td>
+</tr>
+<tr>
+<td>Local</td>
+<td><code>./CLAUDE.local.md</code> (en <code>.gitignore</code>)</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Mantén cada archivo por debajo de ~200 líneas.</li>
+<li>Importa otros archivos con <code>@ruta</code> (hasta 4 niveles).</li>
+<li><strong>Rules por rutas</strong>: <code>.claude/rules/*.md</code> con <code>paths</code> se cargan solo al trabajar con archivos que coinciden:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>---
+paths:
+<span class="gu">  - "src/api/**/*.ts"</span>
+<span class="gu">---</span>
+<span class="gh"># Reglas de la API</span>
+<span class="k">-</span><span class="w"> </span>Todo endpoint valida la entrada
+<span class="k">-</span><span class="w"> </span>Formato de error estándar
+</code></pre></div>
+
+<h3 id="72-auto-memory-notas-que-escribe-claude">7.2 Auto memory (notas que escribe Claude)</h3>
+<ul>
+<li>Se guarda en <code>~/.claude/projects/&lt;proyecto&gt;/memory/</code> (local a la máquina; compartida entre worktrees del mismo repo).</li>
+<li><code>MEMORY.md</code> es un índice conciso: se cargan sus primeras ~200 líneas al iniciar; los archivos temáticos se leen cuando hacen falta.</li>
+</ul>
+<div class="diagram-wrapper shadow-sm rounded-3 my-3"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-1 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama SVG · Estructura de Directorios y Archivos</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">SVG</span></div><div class="diagram-svg-body" style="background:#0f172a;padding:1.25rem 1rem;overflow-x:auto;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 164" width="100%" style="max-width:680px;height:auto;" role="img" aria-label="Estructura de archivos: ~/.claude/projects/&lt;proyecto&gt;/memory/"><defs><marker id="arrow-sky" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#38bdf8"/></marker><marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#34d399"/></marker><marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#fbbf24"/></marker><marker id="arrow-violet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#a78bfa"/></marker><marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#94a3b8"/></marker></defs><path d="M 24 32.0 a 1.5 1.5 0 0 1 1.5 -1.5 h 4 l 1.5 2 h 6.5 a 1.5 1.5 0 0 1 1.5 1.5 v 7.5 a 1.5 1.5 0 0 1 -1.5 1.5 h -12 a 1.5 1.5 0 0 1 -1.5 -1.5 z" fill="#38bdf8" fill-opacity="0.22" stroke="#38bdf8" stroke-width="1.3"/><text x="46" y="41.5" fill="#38bdf8" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="700">~/.claude/projects/&lt;proyecto&gt;/memory/</text><rect x="10" y="52" width="660" height="30" rx="4" fill="#1e293b" fill-opacity="0.35"/><line x1="31" y1="52" x2="31" y2="82" stroke="#475569" stroke-width="1.5"/><line x1="31" y1="67.0" x2="44" y2="67.0" stroke="#475569" stroke-width="1.5"/><rect x="49" y="60.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="70" y="71.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">MEMORY.md</text><line x1="31" y1="82" x2="31" y2="112" stroke="#475569" stroke-width="1.5"/><line x1="31" y1="97.0" x2="44" y2="97.0" stroke="#475569" stroke-width="1.5"/><rect x="49" y="90.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="70" y="101.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">debugging.md</text><rect x="10" y="112" width="660" height="30" rx="4" fill="#1e293b" fill-opacity="0.35"/><path d="M 31 112 L 31 127.0 L 44 127.0" fill="none" stroke="#475569" stroke-width="1.5"/><rect x="49" y="120.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="70" y="131.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">api-conventions.md</text></svg></div><div class="d-none"><pre><code>
+├── MEMORY.md
+├── debugging.md
+└── api-conventions.md
+</code></pre></div></div>
+
+<ul>
+<li>Gestionar: <code>/memory</code> (ver archivos cargados, activar/desactivar auto memory, abrir la carpeta).</li>
+<li>Desactivar: <code>"autoMemoryEnabled": false</code> en settings o <code>CLAUDE_CODE_DISABLE_AUTO_MEMORY=1</code>.</li>
+<li>Subagentes con memoria propia: campo <code>memory: user | project | local</code> en su frontmatter (04.2).</li>
+</ul>
+<p><strong>Flujo recomendado:</strong> cuando Claude aprende algo útil para el equipo, pídele <em>"añade esto a CLAUDE.md"</em> (o a una rule/skill) y revísalo en el PR; deja en auto memory lo personal o efímero.</p>
+<hr />
+<h2 id="8-memoria-en-opencode">8. Memoria en OpenCode</h2>
+<ul>
+<li><strong><code>AGENTS.md</code></strong> (proyecto y global <code>~/.config/opencode/AGENTS.md</code>) e <code>instructions</code> en <code>opencode.json</code> cumplen el papel de memoria procedimental/semántica.</li>
+<li><strong>Skills</strong> para conocimiento bajo demanda.</li>
+<li>Las <strong>sesiones</strong> se guardan y pueden retomarse.</li>
+<li>Para memoria entre sesiones gestionada por el agente, usa un <strong>servidor MCP de memoria</strong> (sección 9) o un archivo de notas del proyecto con una instrucción en <code>AGENTS.md</code>:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="gu">## Memoria del proyecto</span>
+<span class="k">-</span><span class="w"> </span>Al terminar una tarea, añade en <span class="sb">`docs/memoria/decisiones.md`</span> (máx. 3 líneas)
+  cualquier decisión técnica o aprendizaje no obvio, con fecha.
+<span class="k">-</span><span class="w"> </span>Antes de empezar una tarea, lee <span class="sb">`docs/memoria/decisiones.md`</span>.
+</code></pre></div>
+
+<p>Este patrón funciona igual en Claude Code, OpenCode y cualquier agente: memoria <strong>versionada y compartida por el equipo</strong>.</p>
+<hr />
+<h2 id="9-servidores-mcp-de-memoria">9. Servidores MCP de memoria</h2>
+<p>Existen servidores MCP que dan memoria a cualquier cliente. El servidor de referencia <code>@modelcontextprotocol/server-memory</code> guarda un <strong>grafo de conocimiento</strong> (entidades, relaciones, observaciones) en un archivo local:</p>
+<div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>memoria<span class="w"> </span>--<span class="w"> </span>npx<span class="w"> </span>-y<span class="w"> </span>@modelcontextprotocol/server-memory
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>{ "mcp": { "servers": { "memoria": { "type": "local", "command": ["npx", "-y", "@modelcontextprotocol/server-memory"],
+  "environment": { "MEMORY_FILE_PATH": "/ruta/proyecto/.memoria/grafo.json" } } } } }
+</code></pre></div>
+
+<p>Añade en <code>AGENTS.md</code>: <em>"Usa las tools del servidor <code>memoria</code> para guardar decisiones y preferencias relevantes y consúltalas al inicio de cada tarea."</em></p>
+<p>También hay servicios de memoria más avanzados (con búsqueda semántica, multiusuario). Evalúalos con la checklist de seguridad de 02.2.</p>
+<hr />
+<h2 id="10-memoria-en-tus-propios-agentes-memory-tool-de-la-api-de-claude">10. Memoria en tus propios agentes: memory tool de la API de Claude</h2>
+<p>La API de Claude ofrece una <strong>memory tool</strong> (<code>memory_20250818</code>) que permite a Claude crear, leer, actualizar y borrar archivos en un directorio <code>/memories</code> que <strong>persiste entre conversaciones</strong>. Funciona en el <strong>lado cliente</strong>: Claude pide operaciones y <strong>tu aplicación</strong> las ejecuta sobre el almacenamiento que tú controlas (disco, base de datos, por usuario…).</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">anthropic</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">anthropic</span><span class="o">.</span><span class="n">Anthropic</span><span class="p">()</span>
+<span class="n">resp</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"claude-sonnet-5-5"</span><span class="p">,</span>
+    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Ayúdame a responder este ticket de soporte."</span><span class="p">}],</span>
+    <span class="n">tools</span><span class="o">=</span><span class="p">[{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"memory_20250818"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"memory"</span><span class="p">}],</span>
+<span class="p">)</span>
+<span class="c1"># La respuesta incluirá tool_use como: {"command": "view", "path": "/memories"}</span>
+<span class="c1"># Tu código ejecuta el comando (view, create, str_replace, insert, delete, rename)</span>
+<span class="c1"># y devuelve un tool_result. Es el loop de tool use estándar (05.5).</span>
+</code></pre></div>
+
+<p>Puntos clave:</p>
+<ul>
+<li><strong>Valida las rutas</strong>: rechaza cualquier ruta fuera de <code>/memories</code> (protección contra <em>path traversal</em>).</li>
+<li>Mapea <code>/memories</code> a almacenamiento <strong>por usuario/tenant</strong>.</li>
+<li>Combínala con <strong>context editing</strong> (limpieza automática de resultados de tools antiguos) para sesiones largas.</li>
+<li>El SDK de Python incluye utilidades/clases base para implementar el manejador; consulta la documentación de la memory tool.</li>
+</ul>
+<hr />
+<h2 id="11-arquitectura-de-referencia-agente-con-rag-memoria">11. Arquitectura de referencia: agente con RAG + memoria</h2>
+<div class="diagram-wrapper shadow-sm rounded-3 my-3"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-1 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama SVG · Arquitectura de Referencia: Agente con RAG y Memoria</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">SVG</span></div><div class="diagram-svg-body" style="background:#0f172a;padding:1.25rem 1rem;overflow-x:auto;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 350" width="100%" style="max-width:920px;height:auto;" role="img" aria-label="Arquitectura de referencia: Usuario, Agente, MCP docs/memoria/tareas, OTel y ejecución aislada"><defs><marker id="arrow-sky" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#38bdf8"/></marker><marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#34d399"/></marker><marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#fbbf24"/></marker><marker id="arrow-violet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#a78bfa"/></marker><marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#94a3b8"/></marker></defs><rect x="18" y="62" width="110" height="48" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/><text x="73.0" y="90.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Usuario</text><line x1="128" y1="86" x2="168" y2="86" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="168" y="24" width="734" height="222" rx="12" fill="#0f172a" stroke="#38bdf8" stroke-width="2"/><rect x="190" y="10" width="350" height="28" rx="8" fill="#0284c7"/><text x="365" y="29" text-anchor="middle" fill="#ffffff" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Agente (Claude Code / OpenCode / propio)</text><rect x="192" y="50" width="215" height="42" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/><text x="299.5" y="75.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Instrucciones (AGENTS.md)</text><rect x="425" y="50" width="120" height="42" rx="8" fill="#1e293b" stroke="#818cf8" stroke-width="1.6"/><text x="485.0" y="75.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Skills</text><rect x="563" y="50" width="315" height="42" rx="8" fill="#1e293b" stroke="#a78bfa" stroke-width="1.6"/><text x="720.5" y="75.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Búsqueda agéntica en el repo</text><path d="M 250 92 L 250 124 L 295 124" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-emerald)"/><path d="M 250 92 L 250 168 L 295 168" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-amber)"/><path d="M 250 92 L 250 212 L 295 212" fill="none" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="295" y="104" width="145" height="38" rx="6" fill="#1e293b" stroke="#34d399" stroke-width="1.6"/><text x="367.5" y="127.0" text-anchor="middle" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="12" font-weight="700">MCP &quot;docs&quot;</text><line x1="440" y1="123" x2="475" y2="123" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-emerald)"/><rect x="475" y="104" width="403" height="38" rx="6" fill="#1e293b" stroke="#34d399" stroke-width="1.6"/><text x="676.5" y="127.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="500">RAG sobre documentación (Chroma/pgvector)</text><rect x="295" y="148" width="145" height="38" rx="6" fill="#1e293b" stroke="#fbbf24" stroke-width="1.6"/><text x="367.5" y="171.0" text-anchor="middle" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="12" font-weight="700">MCP &quot;memoria&quot;</text><line x1="440" y1="167" x2="475" y2="167" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-amber)"/><rect x="475" y="148" width="403" height="38" rx="6" fill="#1e293b" stroke="#fbbf24" stroke-width="1.6"/><text x="676.5" y="171.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="500">grafo/archivos de memoria del proyecto</text><rect x="295" y="192" width="145" height="38" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/><text x="367.5" y="215.0" text-anchor="middle" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="12" font-weight="700">MCP &quot;tareas&quot;</text><line x1="440" y1="211" x2="475" y2="211" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="475" y="192" width="403" height="38" rx="6" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/><text x="676.5" y="215.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="500">API del negocio</text><path d="M 250 246 L 250 276 L 295 276" fill="none" stroke="#f472b6" stroke-width="2" marker-end="url(#arrow-slate)"/><path d="M 250 246 L 250 318 L 295 318" fill="none" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arrow-slate)"/><rect x="295" y="258" width="450" height="36" rx="6" fill="#1e293b" stroke="#f472b6" stroke-width="1.6"/><text x="520.0" y="280.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="500">trazas y métricas (OTel) → observabilidad (09.2)</text><rect x="295" y="300" width="450" height="36" rx="6" fill="#1e293b" stroke="#2dd4bf" stroke-width="1.6"/><text x="520.0" y="322.0" text-anchor="middle" fill="#cbd5e1" font-family="Segoe UI, Roboto, sans-serif" font-size="12.5" font-weight="500">ejecución aislada (09.1)</text></svg></div><div class="d-none"><pre><code>
+Usuario ───────► │ Instrucciones (AGENTS.md)   Skills   Búsqueda agéntica en el repo          │
+                 │        │                                                                   │
+                 │        ├── MCP "docs"    → RAG sobre documentación (Chroma/pgvector)        │
+                 │        ├── MCP "memoria" → grafo/archivos de memoria del proyecto           │
+                 │        └── MCP "tareas"  → API del negocio                                  │
+                 └──────────────────────────────────────────────────────────────────────────┘
+                          │ trazas y métricas (OTel) → observabilidad (09.2)
+                          │ ejecución aislada (09.1)
+</code></pre></div></div>
+
+<hr />
+<h2 id="errores-comunes">Errores comunes</h2>
+<ul>
+<li>Montar RAG sobre el código del repo cuando grep bastaba.</li>
+<li>Chunks enormes o cortados a mitad de frase/función.</li>
+<li>Indexar una vez y no reindexar (respuestas desactualizadas).</li>
+<li>No citar fuentes → imposible verificar.</li>
+<li>Memorias que crecen sin control y llenan el contexto.</li>
+<li>Guardar secretos o datos personales en la memoria.</li>
+<li>Implementar la memory tool sin validar rutas.</li>
+</ul>
+<h2 id="ejercicios">Ejercicios</h2>
+<ol>
+<li>Indexa esta guía con el servidor <code>docs</code> y conéctalo a Claude Code y OpenCode. Haz 5 preguntas y verifica que cite fuentes correctas.</li>
+<li>Crea <code>evals/rag.jsonl</code> con 15 preguntas y mide <strong>Recall@5</strong>. Cambia el tamaño de chunk y compara.</li>
+<li>✅ Éxito: justificas con números la configuración elegida.</li>
+<li>Crea dos <code>.claude/rules/</code> con <code>paths</code> (frontend y backend) y comprueba con <code>/memory</code> cuándo se cargan.</li>
+<li>Implementa el patrón <code>docs/memoria/decisiones.md</code> en un repo y úsalo durante una semana; poda lo que no aporte.</li>
+<li>(Avanzado) Implementa la memory tool en tu agente de 05.5 guardando en <code>./memorias/&lt;usuario&gt;/</code> con validación de rutas.</li>
+</ol>
+<h2 id="checklist">Checklist</h2>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Sé cuándo usar búsqueda agéntica, RAG o ambos.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Construí un pipeline RAG y lo expuse por MCP.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Evalúo la recuperación con Recall@k.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Domino CLAUDE.md, rules por rutas y auto memory.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Tengo un patrón de memoria compartida para el equipo.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Sé implementar memoria en un agente propio de forma segura.</li>
+</ul>
+<hr />
+<p>⬅️ <a href="02-evaluacion-y-observabilidad.html">09.2</a> · 🏠 <a href="../README.html">Índice</a></p>
+      </article>
+
+      <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+        <a href="02-evaluacion-y-observabilidad.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>&larr; 09.2 · Evaluación y observabilidad de agentes</span></a>
+<a href="../plantillas/AGENTS.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>Proyecto: &lt;NOMBRE&gt; &rarr;</span></a>
+      </div>
+
+      <footer class="text-center text-muted small mt-5 pt-3 border-top">
+        Sitio de documentación generado automáticamente &middot; Bootstrap 5 &middot; Cero pérdida de contenido
+      </footer>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // 1. Botón Toggle para ocultar/mostrar la barra lateral
+      const toggleBtn = document.getElementById('sidebarToggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+          document.body.classList.toggle('sidebar-collapsed');
+        });
+      }
+
+      // 2. Detectar URL actual dinámicamente y aplicar clase .active al enlace correspondiente
+      const currentPath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/').toLowerCase();
+      const sidebarLinks = document.querySelectorAll('#sidebarNav a.sidebar-link');
+      let matchedLink = null;
+
+      sidebarLinks.forEach(function (link) {
+        try {
+          const resolved = new URL(link.getAttribute('href'), window.location.href);
+          const linkPath = decodeURIComponent(resolved.pathname).replace(/\\/g, '/').toLowerCase();
+          if (currentPath && linkPath === currentPath) {
+            matchedLink = link;
+          }
+        } catch (e) {}
+      });
+
+      if (matchedLink) {
+        sidebarLinks.forEach(function (l) { l.classList.remove('active'); });
+        matchedLink.classList.add('active');
+        matchedLink.setAttribute('aria-current', 'page');
+        const parentCollapse = matchedLink.closest('.collapse');
+        if (parentCollapse && !parentCollapse.classList.contains('show')) {
+          parentCollapse.classList.add('show');
+        }
+        matchedLink.scrollIntoView({ block: 'nearest' });
+      } else {
+        const presetActive = document.querySelector('#sidebarNav a.sidebar-link.active');
+        if (presetActive) {
+          presetActive.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      // 3. Filtro rápido en barra lateral
+      const filterInput = document.getElementById('sidebarFilter');
+      if (filterInput) {
+        filterInput.addEventListener('input', function () {
+          const query = this.value.trim().toLowerCase();
+          const groups = document.querySelectorAll('.sidebar-group');
+          groups.forEach(function (group) {
+            const items = group.querySelectorAll('.nav-item');
+            let visibleCount = 0;
+            items.forEach(function (item) {
+              const text = item.textContent.toLowerCase();
+              const match = !query || text.includes(query);
+              item.style.display = match ? '' : 'none';
+              if (match) visibleCount++;
+            });
+            group.style.display = visibleCount > 0 ? '' : 'none';
+            if (query && visibleCount > 0) {
+              const collapseEl = group.querySelector('.collapse');
+              if (collapseEl) collapseEl.classList.add('show');
+            }
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

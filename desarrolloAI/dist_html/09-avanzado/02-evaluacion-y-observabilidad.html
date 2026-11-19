@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>09.2 · Evaluación y observabilidad de agentes — Documentación Desarrollo IA</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <style>
+    :root {
+      --sidebar-width: 310px;
+      --navbar-height: 58px;
+      --brand-primary: #0d6efd;
+      --brand-dark: #0f172a;
+      --bg-soft: #f8fafc;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-soft);
+      color: #1e293b;
+      padding-top: var(--navbar-height);
+      line-height: 1.65;
+    }
+
+    /* Top Navbar */
+    .doc-navbar {
+      height: var(--navbar-height);
+      background-color: var(--brand-dark);
+      z-index: 1040;
+    }
+
+    /* Sidebar fija en escritorio */
+    .doc-sidebar {
+      position: fixed;
+      top: var(--navbar-height);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-width);
+      overflow-y: auto;
+      background-color: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      z-index: 1030;
+      transition: transform 0.25s ease, width 0.25s ease;
+    }
+
+    body.sidebar-collapsed .doc-sidebar {
+      transform: translateX(-100%);
+    }
+
+    /* Contenedor principal con margen izquierdo para la sidebar */
+    .doc-main {
+      margin-left: var(--sidebar-width);
+      transition: margin-left 0.25s ease;
+      min-height: calc(100vh - var(--navbar-height));
+    }
+
+    body.sidebar-collapsed .doc-main {
+      margin-left: 0;
+    }
+
+    /* Estilos del menú lateral */
+    .btn-toggle {
+      color: #334155;
+      background-color: #f1f5f9;
+      border: none;
+      border-radius: 0.375rem;
+      font-size: 0.85rem;
+    }
+
+    .btn-toggle:hover {
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-toggle.group-active {
+      background-color: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .sidebar-link {
+      color: #475569;
+      font-size: 0.86rem;
+      border-left: 3px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-link:hover {
+      color: var(--brand-primary);
+      background-color: #f1f5f9;
+    }
+
+    .sidebar-link.active {
+      color: #0d6efd !important;
+      background-color: #eff6ff !important;
+      border-left-color: #0d6efd;
+      font-weight: 600;
+    }
+
+    /* Contenido del documento */
+    .doc-content-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+    }
+
+    .doc-body h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0f172a;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-body h2 {
+      font-size: 1.45rem;
+      font-weight: 600;
+      color: #1e293b;
+      margin-top: 2.2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid #f1f5f9;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #334155;
+      margin-top: 1.6rem;
+      margin-bottom: 0.75rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-body h4, .doc-body h5, .doc-body h6 {
+      font-weight: 600;
+      color: #475569;
+      margin-top: 1.25rem;
+      scroll-margin-top: 75px;
+    }
+
+    .doc-blockquote {
+      border-left: 4px solid #0d6efd;
+      background-color: #f8fafc;
+      padding: 0.9rem 1.15rem;
+      border-radius: 0 0.5rem 0.5rem 0;
+      font-size: 0.95rem;
+      color: #334155;
+    }
+
+    .doc-blockquote p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Bloques de código y resaltado de sintaxis */
+    .codehilite {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 0.9rem 1rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .codehilite pre, pre {
+      margin: 0;
+      font-family: 'Cascadia Mono', 'Consolas', 'SFMono-Regular', Menlo, Monaco, monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    /* Diagramas ASCII / Unicode */
+    .diagram-wrapper {
+      background-color: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+
+    .diagram-header {
+      background-color: #1e293b;
+      color: #94a3b8;
+      border-color: #334155 !important;
+    }
+
+    .diagram-wrapper .codehilite,
+    .diagram-wrapper pre {
+      background-color: transparent !important;
+      border: none !important;
+      color: #f8fafc !important;
+      padding: 1rem;
+      margin: 0;
+      line-height: 1.25;
+      font-size: 0.84rem;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: 'Cascadia Mono', 'Consolas', monospace;
+      font-size: 0.875em;
+      color: #0f172a;
+      background-color: #f1f5f9;
+      padding: 0.15em 0.38em;
+      border-radius: 0.25rem;
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    .task-list-item {
+      list-style-type: none;
+      margin-left: -1.25rem;
+    }
+
+    .toc-card ul {
+      margin-bottom: 0;
+      padding-left: 1.2rem;
+      font-size: 0.88rem;
+    }
+
+    .toc-card a {
+      text-decoration: none;
+      color: #334155;
+    }
+
+    .toc-card a:hover {
+      color: #0d6efd;
+      text-decoration: underline;
+    }
+
+    /* Responsive: en dispositivos móviles la sidebar pasa a posición relativa/apilada y el contenido ocupa 100% */
+    @media (max-width: 991.98px) {
+      .doc-sidebar {
+        position: relative;
+        top: 0;
+        width: 100%;
+        max-height: 420px;
+        border-right: none;
+        border-bottom: 1px solid #cbd5e1;
+        transform: none !important;
+      }
+
+      body.sidebar-collapsed .doc-sidebar {
+        display: none;
+      }
+
+      .doc-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+      }
+    }
+
+    pre { line-height: 125%; }
+td.linenos .normal { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #666666; background-color: transparent; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #ffffcc }
+.codehilite { background: #f0f0f0; }
+.codehilite .c { color: #60A0B0; font-style: italic } /* Comment */
+.codehilite .err { border: 1px solid #F00 } /* Error */
+.codehilite .k { color: #007020; font-weight: bold } /* Keyword */
+.codehilite .o { color: #666 } /* Operator */
+.codehilite .ch { color: #60A0B0; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #60A0B0; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #007020 } /* Comment.Preproc */
+.codehilite .cpf { color: #60A0B0; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #60A0B0; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #60A0B0; background-color: #FFF0F0 } /* Comment.Special */
+.codehilite .gd { color: #A00000 } /* Generic.Deleted */
+.codehilite .ge { font-style: italic } /* Generic.Emph */
+.codehilite .ges { font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #F00 } /* Generic.Error */
+.codehilite .gh { color: #000080; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #00A000 } /* Generic.Inserted */
+.codehilite .go { color: #888 } /* Generic.Output */
+.codehilite .gp { color: #C65D09; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #800080; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #04D } /* Generic.Traceback */
+.codehilite .kc { color: #007020; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #007020; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #007020; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #007020 } /* Keyword.Pseudo */
+.codehilite .kr { color: #007020; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #902000 } /* Keyword.Type */
+.codehilite .m { color: #40A070 } /* Literal.Number */
+.codehilite .s { color: #4070A0 } /* Literal.String */
+.codehilite .na { color: #4070A0 } /* Name.Attribute */
+.codehilite .nb { color: #007020 } /* Name.Builtin */
+.codehilite .nc { color: #0E84B5; font-weight: bold } /* Name.Class */
+.codehilite .no { color: #60ADD5 } /* Name.Constant */
+.codehilite .nd { color: #555; font-weight: bold } /* Name.Decorator */
+.codehilite .ni { color: #D55537; font-weight: bold } /* Name.Entity */
+.codehilite .ne { color: #007020 } /* Name.Exception */
+.codehilite .nf { color: #06287E } /* Name.Function */
+.codehilite .nl { color: #002070; font-weight: bold } /* Name.Label */
+.codehilite .nn { color: #0E84B5; font-weight: bold } /* Name.Namespace */
+.codehilite .nt { color: #062873; font-weight: bold } /* Name.Tag */
+.codehilite .nv { color: #BB60D5 } /* Name.Variable */
+.codehilite .ow { color: #007020; font-weight: bold } /* Operator.Word */
+.codehilite .w { color: #BBB } /* Text.Whitespace */
+.codehilite .mb { color: #40A070 } /* Literal.Number.Bin */
+.codehilite .mf { color: #40A070 } /* Literal.Number.Float */
+.codehilite .mh { color: #40A070 } /* Literal.Number.Hex */
+.codehilite .mi { color: #40A070 } /* Literal.Number.Integer */
+.codehilite .mo { color: #40A070 } /* Literal.Number.Oct */
+.codehilite .sa { color: #4070A0 } /* Literal.String.Affix */
+.codehilite .sb { color: #4070A0 } /* Literal.String.Backtick */
+.codehilite .sc { color: #4070A0 } /* Literal.String.Char */
+.codehilite .dl { color: #4070A0 } /* Literal.String.Delimiter */
+.codehilite .sd { color: #4070A0; font-style: italic } /* Literal.String.Doc */
+.codehilite .s2 { color: #4070A0 } /* Literal.String.Double */
+.codehilite .se { color: #4070A0; font-weight: bold } /* Literal.String.Escape */
+.codehilite .sh { color: #4070A0 } /* Literal.String.Heredoc */
+.codehilite .si { color: #70A0D0; font-style: italic } /* Literal.String.Interpol */
+.codehilite .sx { color: #C65D09 } /* Literal.String.Other */
+.codehilite .sr { color: #235388 } /* Literal.String.Regex */
+.codehilite .s1 { color: #4070A0 } /* Literal.String.Single */
+.codehilite .ss { color: #517918 } /* Literal.String.Symbol */
+.codehilite .bp { color: #007020 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #06287E } /* Name.Function.Magic */
+.codehilite .vc { color: #BB60D5 } /* Name.Variable.Class */
+.codehilite .vg { color: #BB60D5 } /* Name.Variable.Global */
+.codehilite .vi { color: #BB60D5 } /* Name.Variable.Instance */
+.codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
+.codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */
+  </style>
+</head>
+<body>
+
+  <!-- Barra de navegación superior fija (fixed-top) -->
+  <nav class="navbar navbar-dark doc-navbar fixed-top shadow-sm px-3">
+    <div class="container-fluid">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-outline-light btn-sm d-flex align-items-center gap-1" id="sidebarToggle" type="button" title="Ocultar o mostrar barra lateral" aria-label="Alternar barra lateral">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+          </svg>
+          <span class="d-none d-sm-inline small">Menú</span>
+        </button>
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2 mb-0 ms-1" href="../README.html">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5ZM3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.58 26.58 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.933.933 0 0 1-.765.935c-.845.147-2.34.346-4.235.346-1.895 0-3.39-.2-4.235-.346A.933.933 0 0 1 3 9.219V8.062Zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a24.767 24.767 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25.286 25.286 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135Z"/>
+            <path d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2V1.866ZM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5Z"/>
+          </svg>
+          <span>Desarrollo Agéntico con IA</span>
+        </a>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="../00-ruta-de-aprendizaje.html" class="btn btn-sm btn-outline-info d-none d-md-inline-block">Ruta de aprendizaje</a>
+        <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">09-avanzado/02-evaluacion-y-observabilidad.html</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Barra lateral fija (Sidebar) -->
+  <aside class="doc-sidebar shadow-sm p-3" id="docSidebar" aria-label="Navegación de documentación">
+    <div class="mb-3">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-light border-end-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+        </span>
+        <input type="search" id="sidebarFilter" class="form-control bg-light border-start-0" placeholder="Filtrar documentos..." aria-label="Filtrar documentos">
+      </div>
+    </div>
+    <nav id="sidebarNav">
+      <div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-section-0" aria-expanded="true" aria-controls="submenu-section-0"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>Inicio / Raíz</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">2</span></button>
+<div class="collapse show" id="submenu-section-0">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../README.html" title="README.html"><span class="d-block text-truncate">🤖 Desarrollo de software asistido por IA (agéntico)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../00-ruta-de-aprendizaje.html" title="00-ruta-de-aprendizaje.html"><span class="d-block text-truncate">00 · Ruta de aprendizaje</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-01-fundamentos-1" aria-expanded="true" aria-controls="submenu-01-fundamentos-1"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>01-fundamentos</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-01-fundamentos-1">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-fundamentos/01-que-es-el-desarrollo-agentico.html" title="01-fundamentos/01-que-es-el-desarrollo-agentico.html"><span class="d-block text-truncate">01.1 · ¿Qué es el desarrollo agéntico?</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-fundamentos/02-llms-contexto-y-tokens.html" title="01-fundamentos/02-llms-contexto-y-tokens.html"><span class="d-block text-truncate">01.2 · LLMs, contexto y tokens (lo que necesitas saber)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../01-fundamentos/03-context-engineering-e-instrucciones.html" title="01-fundamentos/03-context-engineering-e-instrucciones.html"><span class="d-block text-truncate">01.3 · Context engineering e instrucciones (CLAUDE.md, AGENTS.md, rules)</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-02-flujos-de-trabajo-2" aria-expanded="true" aria-controls="submenu-02-flujos-de-trabajo-2"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>02-flujos-de-trabajo</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">2</span></button>
+<div class="collapse show" id="submenu-02-flujos-de-trabajo-2">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../02-flujos-de-trabajo/01-flujos-de-trabajo-agenticos.html" title="02-flujos-de-trabajo/01-flujos-de-trabajo-agenticos.html"><span class="d-block text-truncate">02.1 · Flujos de trabajo agénticos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../02-flujos-de-trabajo/02-seguridad-y-buenas-practicas.html" title="02-flujos-de-trabajo/02-seguridad-y-buenas-practicas.html"><span class="d-block text-truncate">02.2 · Seguridad y buenas prácticas</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-03-herramientas-3" aria-expanded="true" aria-controls="submenu-03-herramientas-3"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>03-herramientas</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-03-herramientas-3">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../03-herramientas/01-claude-code.html" title="03-herramientas/01-claude-code.html"><span class="d-block text-truncate">03.1 · Claude Code</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../03-herramientas/02-opencode.html" title="03-herramientas/02-opencode.html"><span class="d-block text-truncate">03.2 · OpenCode</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../03-herramientas/03-comparativa-claude-code-vs-opencode.html" title="03-herramientas/03-comparativa-claude-code-vs-opencode.html"><span class="d-block text-truncate">03.3 · Comparativa: Claude Code vs OpenCode</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-04-extensibilidad-4" aria-expanded="true" aria-controls="submenu-04-extensibilidad-4"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>04-extensibilidad</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-04-extensibilidad-4">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../04-extensibilidad/01-skills.html" title="04-extensibilidad/01-skills.html"><span class="d-block text-truncate">04.1 · Skills</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../04-extensibilidad/02-agentes-y-subagentes.html" title="04-extensibilidad/02-agentes-y-subagentes.html"><span class="d-block text-truncate">04.2 · Agentes y subagentes</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../04-extensibilidad/03-hooks-comandos-y-plugins.html" title="04-extensibilidad/03-hooks-comandos-y-plugins.html"><span class="d-block text-truncate">04.3 · Hooks, comandos y plugins</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-05-mcp-5" aria-expanded="true" aria-controls="submenu-05-mcp-5"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>05-mcp</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">6</span></button>
+<div class="collapse show" id="submenu-05-mcp-5">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/01-mcp-conceptos.html" title="05-mcp/01-mcp-conceptos.html"><span class="d-block text-truncate">05.1 · MCP (Model Context Protocol): conceptos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/02-mcp-servidor-python.html" title="05-mcp/02-mcp-servidor-python.html"><span class="d-block text-truncate">05.2 · Servidor MCP en Python</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/03-mcp-servidor-nodejs.html" title="05-mcp/03-mcp-servidor-nodejs.html"><span class="d-block text-truncate">05.3 · Servidor MCP en Node.js (TypeScript)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/04-mcp-servidor-csharp.html" title="05-mcp/04-mcp-servidor-csharp.html"><span class="d-block text-truncate">05.4 · Servidor MCP en C# (.NET)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/05-mcp-clientes-python-node-csharp.html" title="05-mcp/05-mcp-clientes-python-node-csharp.html"><span class="d-block text-truncate">05.5 · Clientes MCP en Python, Node.js y C# (y tu propio agente)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../05-mcp/06-mcp-configuracion-en-clientes.html" title="05-mcp/06-mcp-configuracion-en-clientes.html"><span class="d-block text-truncate">05.6 · Configurar servidores MCP en clientes (Claude Code, OpenCode, VS Code, Claude Desktop)</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-06-spec-driven-6" aria-expanded="true" aria-controls="submenu-06-spec-driven-6"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>06-spec-driven</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">1</span></button>
+<div class="collapse show" id="submenu-06-spec-driven-6">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../06-spec-driven/01-openspec.html" title="06-spec-driven/01-openspec.html"><span class="d-block text-truncate">06.1 · OpenSpec y spec-driven development</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-07-testing-7" aria-expanded="true" aria-controls="submenu-07-testing-7"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>07-testing</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-07-testing-7">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../07-testing/01-pruebas-unitarias-con-ia.html" title="07-testing/01-pruebas-unitarias-con-ia.html"><span class="d-block text-truncate">07.1 · Pruebas unitarias con IA (Python, TypeScript, C# y en el navegador)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../07-testing/02-playwright-e2e-fundamentos.html" title="07-testing/02-playwright-e2e-fundamentos.html"><span class="d-block text-truncate">07.2 · Playwright E2E: fundamentos</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../07-testing/03-playwright-con-ia-mcp-y-test-agents.html" title="07-testing/03-playwright-con-ia-mcp-y-test-agents.html"><span class="d-block text-truncate">07.3 · Playwright con IA: Playwright MCP y Playwright Test Agents</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-08-proyecto-integrador-8" aria-expanded="true" aria-controls="submenu-08-proyecto-integrador-8"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>08-proyecto-integrador</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">1</span></button>
+<div class="collapse show" id="submenu-08-proyecto-integrador-8">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../08-proyecto-integrador/01-proyecto-integrador.html" title="08-proyecto-integrador/01-proyecto-integrador.html"><span class="d-block text-truncate">08 · Proyecto integrador: &quot;TaskFlow&quot; de principio a fin</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold group-active" type="button" data-bs-toggle="collapse" data-bs-target="#submenu-09-avanzado-9" aria-expanded="true" aria-controls="submenu-09-avanzado-9"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>09-avanzado</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">3</span></button>
+<div class="collapse show" id="submenu-09-avanzado-9">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="01-aislamiento-sandbox-devcontainers-docker.html" title="09-avanzado/01-aislamiento-sandbox-devcontainers-docker.html"><span class="d-block text-truncate">09.1 · Aislamiento serio: sandbox, Dev Containers y Docker Sandboxes</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link active py-1 px-3 rounded-2" href="02-evaluacion-y-observabilidad.html" aria-current="page" title="09-avanzado/02-evaluacion-y-observabilidad.html"><span class="d-block text-truncate">09.2 · Evaluación y observabilidad de agentes</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="03-rag-y-memoria-persistente.html" title="09-avanzado/03-rag-y-memoria-persistente.html"><span class="d-block text-truncate">09.3 · Patrones RAG y memoria persistente</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-plantillas-10" aria-expanded="true" aria-controls="submenu-plantillas-10"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>plantillas</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">16</span></button>
+<div class="collapse show" id="submenu-plantillas-10">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/AGENTS.html" title="plantillas/AGENTS.html"><span class="d-block text-truncate">Proyecto: &lt;NOMBRE&gt;</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/agents/code-reviewer.html" title="plantillas/claude-code/.claude/agents/code-reviewer.html"><span class="d-block text-truncate">code-reviewer (claude-code/.claude/agents/code-reviewer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/agents/code-reviewer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/agents/e2e-tester.html" title="plantillas/claude-code/.claude/agents/e2e-tester.html"><span class="d-block text-truncate">e2e-tester (claude-code/.claude/agents/e2e-tester.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/agents/e2e-tester.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/agents/test-writer.html" title="plantillas/claude-code/.claude/agents/test-writer.html"><span class="d-block text-truncate">test-writer (claude-code/.claude/agents/test-writer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/agents/test-writer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/skills/crear-endpoint/SKILL.html" title="plantillas/claude-code/.claude/skills/crear-endpoint/SKILL.html"><span class="d-block text-truncate">Crear endpoint REST</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/skills/crear-endpoint/SKILL.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/claude-code/.claude/skills/release/SKILL.html" title="plantillas/claude-code/.claude/skills/release/SKILL.html"><span class="d-block text-truncate">SKILL (claude-code/.claude/skills/release/SKILL.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">claude-code/.claude/skills/release/SKILL.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/CLAUDE.html" title="plantillas/CLAUDE.html"><span class="d-block text-truncate">CLAUDE</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/agents/reviewer.html" title="plantillas/opencode/.opencode/agents/reviewer.html"><span class="d-block text-truncate">reviewer (opencode/.opencode/agents/reviewer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/agents/reviewer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/agents/test-writer.html" title="plantillas/opencode/.opencode/agents/test-writer.html"><span class="d-block text-truncate">test-writer (opencode/.opencode/agents/test-writer.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/agents/test-writer.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/commands/fix-issue.html" title="plantillas/opencode/.opencode/commands/fix-issue.html"><span class="d-block text-truncate">fix-issue (opencode/.opencode/commands/fix-issue.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/commands/fix-issue.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/opencode/.opencode/commands/review.html" title="plantillas/opencode/.opencode/commands/review.html"><span class="d-block text-truncate">review (opencode/.opencode/commands/review.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">opencode/.opencode/commands/review.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/design.html" title="plantillas/openspec/changes/nombre-del-cambio/design.html"><span class="d-block text-truncate">Diseño: &lt;título del cambio&gt;</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/design.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/proposal.html" title="plantillas/openspec/changes/nombre-del-cambio/proposal.html"><span class="d-block text-truncate">Propuesta: &lt;título del cambio&gt;</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/proposal.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/specs/capacidad/spec.html" title="plantillas/openspec/changes/nombre-del-cambio/specs/capacidad/spec.html"><span class="d-block text-truncate">spec (openspec/changes/nombre-del-cambio/specs/capacidad/spec.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/specs/capacidad/spec.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/openspec/changes/nombre-del-cambio/tasks.html" title="plantillas/openspec/changes/nombre-del-cambio/tasks.html"><span class="d-block text-truncate">tasks (openspec/changes/nombre-del-cambio/tasks.md)</span><small class="d-block text-muted text-truncate" style="font-size:0.72rem;">openspec/changes/nombre-del-cambio/tasks.md</small></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../plantillas/README.html" title="plantillas/README.html"><span class="d-block text-truncate">Plantillas reutilizables</span></a></li>
+</ul>
+</div>
+</div>
+<div class="sidebar-group mb-2">
+<button class="btn btn-toggle d-flex align-items-center justify-content-between w-100 px-3 py-2 text-start fw-semibold " type="button" data-bs-toggle="collapse" data-bs-target="#submenu-referencia-11" aria-expanded="true" aria-controls="submenu-referencia-11"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19z"/></svg><span>referencia</span></span><span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis">7</span></button>
+<div class="collapse show" id="submenu-referencia-11">
+<ul class="nav flex-column sidebar-submenu ps-2 py-1">
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-claude-code.html" title="referencia/cheatsheet-claude-code.html"><span class="d-block text-truncate">Cheatsheet · Claude Code</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-mcp.html" title="referencia/cheatsheet-mcp.html"><span class="d-block text-truncate">Cheatsheet · MCP (spec 2026-07-28, SDK v2)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-opencode.html" title="referencia/cheatsheet-opencode.html"><span class="d-block text-truncate">Cheatsheet · OpenCode 2.x</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-openspec.html" title="referencia/cheatsheet-openspec.html"><span class="d-block text-truncate">Cheatsheet · OpenSpec 1.x</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/cheatsheet-playwright.html" title="referencia/cheatsheet-playwright.html"><span class="d-block text-truncate">Cheatsheet · Playwright</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/glosario.html" title="referencia/glosario.html"><span class="d-block text-truncate">Glosario (inglés → español)</span></a></li>
+<li class="nav-item"><a class="nav-link sidebar-link py-1 px-3 rounded-2" href="../referencia/recursos-y-fuentes.html" title="referencia/recursos-y-fuentes.html"><span class="d-block text-truncate">Recursos y fuentes oficiales</span></a></li>
+</ul>
+</div>
+</div>
+    </nav>
+  </aside>
+
+  <!-- Contenedor principal de contenido -->
+  <main class="doc-main p-3 p-md-4 p-lg-5">
+    <div class="container-xxl">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb bg-white px-3 py-2 rounded-3 shadow-sm border mb-0 small">
+          <li class="breadcrumb-item"><a href="../README.html" class="text-decoration-none">Inicio</a></li>
+<li class="breadcrumb-item text-muted">09-avanzado</li>
+<li class="breadcrumb-item active fw-semibold" aria-current="page">02-evaluacion-y-observabilidad.html</li>
+        </ol>
+      </nav>
+
+      
+        <div class="card border-0 shadow-sm mb-4 toc-card">
+          <div class="card-body py-2 px-3">
+            <button class="btn btn-sm btn-link text-decoration-none text-dark fw-semibold p-0 d-flex align-items-center gap-2 w-100 justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#pageTocCollapse" aria-expanded="false" aria-controls="pageTocCollapse">
+              <span class="d-flex align-items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                </svg>
+                Contenido de esta página
+              </span>
+              <span class="small text-muted">Mostrar / Ocultar</span>
+            </button>
+            <div class="collapse mt-2" id="pageTocCollapse">
+              <div class="toc">
+<ul>
+<li><a href="#092-evaluacion-y-observabilidad-de-agentes">09.2 · Evaluación y observabilidad de agentes</a><ul>
+<li><a href="#objetivos">Objetivos</a></li>
+<li><a href="#1-por-que-evaluar">1. Por qué evaluar</a></li>
+<li><a href="#2-que-se-evalua-en-desarrollo-agentico">2. ¿Qué se evalúa en desarrollo agéntico?</a></li>
+<li><a href="#3-anatomia-de-una-eval">3. Anatomía de una eval</a></li>
+<li><a href="#4-eval-de-seleccion-de-tools-mcp-python">4. Eval de selección de tools MCP (Python)</a></li>
+<li><a href="#5-evals-declarativas-con-promptfoo">5. Evals declarativas con promptfoo</a></li>
+<li><a href="#6-evaluar-skills">6. Evaluar skills</a></li>
+<li><a href="#7-evaluar-al-agente-completo-benchmark-propio">7. Evaluar al agente completo (benchmark propio)</a></li>
+<li><a href="#8-evals-en-ci">8. Evals en CI</a></li>
+<li><a href="#9-observabilidad-de-claude-code-con-opentelemetry">9. Observabilidad de Claude Code con OpenTelemetry</a><ul>
+<li><a href="#91-activar">9.1 Activar</a></li>
+<li><a href="#92-que-obtienes">9.2 Qué obtienes</a></li>
+<li><a href="#93-stack-local-minimo-docker-compose">9.3 Stack local mínimo (Docker Compose)</a></li>
+<li><a href="#94-consumo-sin-infraestructura">9.4 Consumo sin infraestructura</a></li>
+</ul>
+</li>
+<li><a href="#10-trazas-de-tu-propio-agente">10. Trazas de tu propio agente</a></li>
+<li><a href="#11-que-vigilar-kpis-de-un-equipo-agentico">11. Qué vigilar (KPIs de un equipo agéntico)</a></li>
+<li><a href="#errores-comunes">Errores comunes</a></li>
+<li><a href="#ejercicios">Ejercicios</a></li>
+<li><a href="#checklist">Checklist</a></li>
+</ul>
+</li>
+</ul>
+</div>
+
+            </div>
+          </div>
+        </div>
+        
+
+      <article class="doc-content-card shadow-sm p-4 p-md-5 doc-body">
+        <h1 id="092-evaluacion-y-observabilidad-de-agentes">09.2 · Evaluación y observabilidad de agentes</h1>
+<h2 id="objetivos">Objetivos</h2>
+<ul>
+<li>Medir si tus <strong>prompts, instrucciones, skills, subagentes y tools MCP</strong> funcionan, con evaluaciones (<em>evals</em>) repetibles.</li>
+<li>Diseñar datasets, <em>graders</em> (por código, LLM-as-judge y humanos) y métricas.</li>
+<li>Automatizar evals en CI para detectar <strong>regresiones</strong>.</li>
+<li>Observar a los agentes en ejecución: <strong>OpenTelemetry</strong> en Claude Code, trazas de tu propio agente, costes y uso.</li>
+</ul>
+<hr />
+<h2 id="1-por-que-evaluar">1. Por qué evaluar</h2>
+<p>Cambias una línea de <code>AGENTS.md</code>, la descripción de una skill o de una tool MCP… ¿mejoró o empeoró? Sin evals, solo tienes impresiones. Los LLM son <strong>no deterministas</strong>: un ejemplo que funciona una vez no prueba nada.</p>
+<div class="diagram-wrapper shadow-sm rounded-3 my-3"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-1 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama SVG · Ciclo de Evaluación Offline y Observabilidad Online</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">SVG</span></div><div class="diagram-svg-body" style="background:#0f172a;padding:1.25rem 1rem;overflow-x:auto;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 224" width="100%" style="max-width:940px;height:auto;" role="img" aria-label="Ciclo: Cambio -&gt; Evals (offline) -&gt; ¿Mejor? -&gt; Despliegue -&gt; Observabilidad (online)"><defs><marker id="arrow-sky" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#38bdf8"/></marker><marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#34d399"/></marker><marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#fbbf24"/></marker><marker id="arrow-violet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#a78bfa"/></marker><marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#94a3b8"/></marker></defs><path d="M 500 86 L 500 32 L 125 32 L 125 86" fill="none" stroke="#fbbf24" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow-amber)"/><rect x="235" y="18" width="150" height="26" rx="13" fill="#1e293b" stroke="#fbbf24" stroke-width="1.2"/><text x="310" y="35" text-anchor="middle" fill="#fbbf24" font-family="Segoe UI, Roboto, sans-serif" font-size="12" font-weight="600">bucle de mejora</text><rect x="20" y="86" width="210" height="54" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1.6"/><text x="125.0" y="117.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Cambio (prompt, skill, tool)</text><line x1="230" y1="113" x2="265" y2="113" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="265" y="86" width="145" height="54" rx="8" fill="#1e293b" stroke="#818cf8" stroke-width="1.6"/><text x="337.5" y="117.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Evals (offline)</text><line x1="410" y1="113" x2="445" y2="113" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="445" y="86" width="110" height="54" rx="8" fill="#1e293b" stroke="#fbbf24" stroke-width="1.6"/><text x="500.0" y="117.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">¿Mejor?</text><line x1="555" y1="113" x2="590" y2="113" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="590" y="86" width="120" height="54" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1.6"/><text x="650.0" y="117.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Despliegue</text><line x1="710" y1="113" x2="745" y2="113" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow-sky)"/><rect x="745" y="86" width="175" height="54" rx="8" fill="#1e293b" stroke="#a78bfa" stroke-width="1.6"/><text x="832.5" y="117.0" text-anchor="middle" fill="#f8fafc" font-family="Segoe UI, Roboto, sans-serif" font-size="13" font-weight="700">Observabilidad (online)</text><path d="M 832 140 L 832 196 L 337 196 L 337 140" fill="none" stroke="#a78bfa" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow-violet)"/><rect x="455" y="182" width="260" height="26" rx="13" fill="#1e293b" stroke="#a78bfa" stroke-width="1.2"/><text x="585" y="199" text-anchor="middle" fill="#e2e8f0" font-family="Segoe UI, Roboto, sans-serif" font-size="12" font-weight="600">nuevos casos desde fallos reales</text></svg></div><div class="d-none"><pre><code>
+      ▼                                          │
+ Cambio (prompt, skill, tool) → Evals (offline) → ¿Mejor? → Despliegue → Observabilidad (online)
+                                     ▲                                        │
+                                     └──── nuevos casos desde fallos reales ◄─┘
+</code></pre></div></div>
+
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Qué es</th>
+<th>Cuándo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Offline (evals)</strong></td>
+<td>Dataset fijo de casos + graders, se ejecuta bajo demanda o en CI</td>
+<td>Antes de cambiar algo</td>
+</tr>
+<tr>
+<td><strong>Online (observabilidad)</strong></td>
+<td>Trazas, métricas y feedback del uso real</td>
+<td>Durante el uso</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="2-que-se-evalua-en-desarrollo-agentico">2. ¿Qué se evalúa en desarrollo agéntico?</h2>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Objeto</th>
+<th>Pregunta</th>
+<th>Ejemplo de métrica</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Instrucciones</strong> (<code>AGENTS.md</code>)</td>
+<td>¿El agente sigue las reglas?</td>
+<td>% de sesiones que ejecutan tests antes de terminar</td>
+</tr>
+<tr>
+<td><strong>Skills</strong></td>
+<td>¿Se activan cuando deben y solo entonces? ¿El resultado es correcto?</td>
+<td>Precisión/recall de activación; % de salidas válidas</td>
+</tr>
+<tr>
+<td><strong>Subagentes</strong></td>
+<td>¿El revisor detecta los bugs sembrados?</td>
+<td>% de bugs detectados, falsos positivos</td>
+</tr>
+<tr>
+<td><strong>Tools MCP</strong></td>
+<td>¿El modelo elige la tool correcta con argumentos correctos?</td>
+<td>Exactitud de selección de tool y de argumentos</td>
+</tr>
+<tr>
+<td><strong>Agente completo</strong></td>
+<td>¿Resuelve la tarea de punta a punta?</td>
+<td>% de tareas con tests en verde (pass@k), coste y tiempo por tarea</td>
+</tr>
+<tr>
+<td><strong>RAG</strong> (09.3)</td>
+<td>¿Recupera los documentos correctos? ¿Responde con fundamento?</td>
+<td>Recall@k, fidelidad (<em>faithfulness</em>)</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3-anatomia-de-una-eval">3. Anatomía de una eval</h2>
+<ol>
+<li><strong>Dataset</strong>: casos con entrada y expectativa. Empieza con 20–50 casos reales (incluye casos borde y fallos pasados).</li>
+<li><strong>Tarea</strong>: lo que se ejecuta (un prompt, una llamada con tools, una sesión de agente headless).</li>
+<li><strong>Graders</strong> (calificadores):</li>
+</ol>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Grader</th>
+<th>Cómo</th>
+<th>Pros / contras</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Por código</strong></td>
+<td><code>assert</code>, regex, JSON válido, ¿pasan los tests?, ¿se llamó a la tool X?</td>
+<td>Rápido, barato, determinista. Solo para lo verificable</td>
+</tr>
+<tr>
+<td><strong>LLM-as-judge</strong></td>
+<td>Otro modelo puntúa según una rúbrica</td>
+<td>Evalúa calidad abierta. Calíbralo con revisión humana</td>
+</tr>
+<tr>
+<td><strong>Humano</strong></td>
+<td>Revisión manual de una muestra</td>
+<td>Lo más fiable; lento y caro</td>
+</tr>
+</tbody>
+</table></div>
+<ol>
+<li><strong>Métricas</strong>: tasa de aprobados, <strong>pass@k</strong> (al menos 1 éxito en k intentos) y <strong>pass^k</strong> (éxito en los k intentos, mide consistencia), coste, latencia.</li>
+<li><strong>Repetición</strong>: ejecuta cada caso varias veces (3–5) por el no determinismo.</li>
+</ol>
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>💡 Prioriza graders <strong>por código</strong>: en agentes de software el mejor juez casi siempre es "¿compila y pasan los tests?".</p>
+</blockquote>
+<hr />
+<h2 id="4-eval-de-seleccion-de-tools-mcp-python">4. Eval de selección de tools MCP (Python)</h2>
+<p>Comprueba que, con las descripciones actuales, el modelo elige la tool correcta. Reutiliza el servidor de <a href="../05-mcp/02-mcp-servidor-python.html">05.2</a>.</p>
+<p><code>evals/casos_tools.jsonl</code></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">"entrada"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Apunta que mañana tengo que llamar al banco, es urgente"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"agregar_tarea"</span><span class="p">,</span><span class="w"> </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"prioridad"</span><span class="p">:</span><span class="w"> </span><span class="s2">"alta"</span><span class="p">}}</span>
+<span class="p">{</span><span class="nt">"entrada"</span><span class="p">:</span><span class="w"> </span><span class="s2">"¿Qué me queda pendiente?"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"listar_tareas"</span><span class="p">,</span><span class="w"> </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">{}}</span>
+<span class="p">{</span><span class="nt">"entrada"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Ya terminé la tarea 3"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tool"</span><span class="p">:</span><span class="w"> </span><span class="s2">"completar_tarea"</span><span class="p">,</span><span class="w"> </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"tarea_id"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">}}</span>
+<span class="p">{</span><span class="nt">"entrada"</span><span class="p">:</span><span class="w"> </span><span class="s2">"¿Cuál es la capital de Francia?"</span><span class="p">,</span><span class="w"> </span><span class="nt">"tool"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">{}}</span>
+</code></pre></div>
+
+<p><code>evals/eval_tools.py</code></p>
+<div class="codehilite"><pre><span></span><code><span class="sd">"""Eval: ¿el modelo elige la tool MCP correcta? Ejecuta cada caso N veces."""</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">anyio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">anthropic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span><span class="p">,</span> <span class="n">StdioServerParameters</span>
+
+<span class="n">MODELO</span> <span class="o">=</span> <span class="s2">"claude-haiku-5-5"</span>   <span class="c1"># evalúa con el modelo que usarás en producción</span>
+<span class="n">REPETICIONES</span> <span class="o">=</span> <span class="mi">3</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">llm</span> <span class="o">=</span> <span class="n">anthropic</span><span class="o">.</span><span class="n">Anthropic</span><span class="p">()</span>
+    <span class="n">casos</span> <span class="o">=</span> <span class="p">[</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"evals/casos_tools.jsonl"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)]</span>
+
+    <span class="k">async</span> <span class="k">with</span> <span class="n">Client</span><span class="p">(</span><span class="n">StdioServerParameters</span><span class="p">(</span><span class="n">command</span><span class="o">=</span><span class="s2">"uv"</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s2">"run"</span><span class="p">,</span> <span class="s2">"server.py"</span><span class="p">]))</span> <span class="k">as</span> <span class="n">mcp</span><span class="p">:</span>
+        <span class="n">tools</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">description</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"input_schema"</span><span class="p">:</span> <span class="n">t</span><span class="o">.</span><span class="n">input_schema</span><span class="p">}</span>
+                 <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="k">await</span> <span class="n">mcp</span><span class="o">.</span><span class="n">list_tools</span><span class="p">())</span><span class="o">.</span><span class="n">tools</span><span class="p">]</span>
+
+        <span class="n">aciertos</span> <span class="o">=</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">caso</span> <span class="ow">in</span> <span class="n">casos</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">REPETICIONES</span><span class="p">):</span>
+                <span class="n">resp</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">MODELO</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span> <span class="n">tools</span><span class="o">=</span><span class="n">tools</span><span class="p">,</span>
+                                           <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">caso</span><span class="p">[</span><span class="s2">"entrada"</span><span class="p">]}])</span>
+                <span class="n">usadas</span> <span class="o">=</span> <span class="p">[</span><span class="n">b</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">resp</span><span class="o">.</span><span class="n">content</span> <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">"tool_use"</span><span class="p">]</span>
+                <span class="n">elegida</span> <span class="o">=</span> <span class="n">usadas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="n">usadas</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="n">ok</span> <span class="o">=</span> <span class="n">elegida</span> <span class="o">==</span> <span class="n">caso</span><span class="p">[</span><span class="s2">"tool"</span><span class="p">]</span>
+                <span class="c1"># comprobar argumentos esperados (si los hay)</span>
+                <span class="k">if</span> <span class="n">ok</span> <span class="ow">and</span> <span class="n">usadas</span><span class="p">:</span>
+                    <span class="n">ok</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">usadas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">==</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">caso</span><span class="p">[</span><span class="s2">"args"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+                <span class="n">aciertos</span> <span class="o">+=</span> <span class="n">ok</span>
+                <span class="n">total</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">ok</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ '</span><span class="si">{</span><span class="n">caso</span><span class="p">[</span><span class="s1">'entrada'</span><span class="p">]</span><span class="si">}</span><span class="s2">' → </span><span class="si">{</span><span class="n">elegida</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">usadas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">input</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">usadas</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="s2">Exactitud: </span><span class="si">{</span><span class="n">aciertos</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">aciertos</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">total</span><span class="si">:</span><span class="s2">.0%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">anyio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Úsala así: cambia la descripción de una tool → vuelve a ejecutar → compara la exactitud.</p>
+<hr />
+<h2 id="5-evals-declarativas-con-promptfoo">5. Evals declarativas con promptfoo</h2>
+<p><strong>promptfoo</strong> es una CLI open source (MIT) para evaluar prompts, agentes y hacer <em>red teaming</em> (prompt injection, fugas de datos…).</p>
+<div class="codehilite"><pre><span></span><code>npx<span class="w"> </span>promptfoo@latest<span class="w"> </span>init
+</code></pre></div>
+
+<p><code>promptfooconfig.yaml</code></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Revisor</span><span class="nv"> </span><span class="s">de</span><span class="nv"> </span><span class="s">código:</span><span class="nv"> </span><span class="s">¿detecta</span><span class="nv"> </span><span class="s">bugs</span><span class="nv"> </span><span class="s">sembrados?"</span>
+
+<span class="nt">prompts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file://prompts/revisor.txt</span><span class="w">        </span><span class="c1"># usa el cuerpo de tu subagente code-reviewer</span>
+
+<span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic:messages:claude-sonnet-5-5</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic:messages:claude-haiku-5-5</span><span class="w">   </span><span class="c1"># comparar modelos</span>
+
+<span class="nt">tests</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">vars</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">diff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file://casos/sql_concatenado.diff</span>
+<span class="w">    </span><span class="nt">assert</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">icontains</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"inyección"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llm-rubric</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"Señala</span><span class="nv"> </span><span class="s">la</span><span class="nv"> </span><span class="s">inyección</span><span class="nv"> </span><span class="s">SQL</span><span class="nv"> </span><span class="s">como</span><span class="nv"> </span><span class="s">hallazgo</span><span class="nv"> </span><span class="s">crítico</span><span class="nv"> </span><span class="s">e</span><span class="nv"> </span><span class="s">indica</span><span class="nv"> </span><span class="s">la</span><span class="nv"> </span><span class="s">línea"</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">vars</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">diff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file://casos/cambio_limpio.diff</span>
+<span class="w">    </span><span class="nt">assert</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">not-icontains</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"crítico"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llm-rubric</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"No</span><span class="nv"> </span><span class="s">inventa</span><span class="nv"> </span><span class="s">problemas</span><span class="nv"> </span><span class="s">graves</span><span class="nv"> </span><span class="s">en</span><span class="nv"> </span><span class="s">un</span><span class="nv"> </span><span class="s">cambio</span><span class="nv"> </span><span class="s">correcto"</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">vars</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">diff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file://casos/test_debilitado.diff</span>
+<span class="w">    </span><span class="nt">assert</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llm-rubric</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"Detecta</span><span class="nv"> </span><span class="s">que</span><span class="nv"> </span><span class="s">se</span><span class="nv"> </span><span class="s">relajó</span><span class="nv"> </span><span class="s">o</span><span class="nv"> </span><span class="s">eliminó</span><span class="nv"> </span><span class="s">una</span><span class="nv"> </span><span class="s">aserción</span><span class="nv"> </span><span class="s">de</span><span class="nv"> </span><span class="s">un</span><span class="nv"> </span><span class="s">test"</span>
+</code></pre></div>
+
+<p><code>prompts/revisor.txt</code></p>
+<div class="codehilite"><pre><span></span><code>Eres un revisor de código senior. Revisa este diff y lista hallazgos por severidad
+(Crítico, Importante, Sugerencia) con archivo:línea.
+
+{{diff}}
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>npx<span class="w"> </span>promptfoo@latest<span class="w"> </span><span class="nb">eval</span>
+npx<span class="w"> </span>promptfoo@latest<span class="w"> </span>view<span class="w">      </span><span class="c1"># comparativa en el navegador</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-evaluar-skills">6. Evaluar skills</h2>
+<ol>
+<li>
+<p><strong>Activación</strong>: escribe ~10 peticiones que <em>deberían</em> activar la skill y ~10 que <em>no</em>. Ejecútalas en modo headless y comprueba si se cargó:
+   <code>bash
+   claude -p "añade un endpoint para archivar tareas" --output-format stream-json &gt; salida.jsonl
+   # busca en salida.jsonl el uso de la skill "crear-endpoint"</code></p>
+</li>
+<li>
+<p><strong>Resultado</strong>: para cada petición, graders por código (¿se crearon los archivos esperados?, ¿pasan los tests?).</p>
+</li>
+<li>Itera la <code>description</code> hasta tener alta precisión y recall.</li>
+</ol>
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>La skill integrada <code>skill-creator</code> de Claude incluye un flujo para crear evals de skills, medir rendimiento y optimizar la descripción.</p>
+</blockquote>
+<hr />
+<h2 id="7-evaluar-al-agente-completo-benchmark-propio">7. Evaluar al agente completo (benchmark propio)</h2>
+<p>Inspirado en benchmarks tipo <em>SWE-bench</em>: un conjunto de <strong>tareas reales de tu repo</strong> con tests de aceptación.</p>
+<div class="diagram-wrapper shadow-sm rounded-3 my-3"><div class="diagram-header d-flex align-items-center justify-content-between px-3 py-1 border-bottom"><span class="d-flex align-items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#38bdf8" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M6 3.5A1.5 1.5 0 0 1 7.5 2h1A1.5 1.5 0 0 1 10 3.5v1A1.5 1.5 0 0 1 8.5 6v1H14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0V8h-5v.5a.5.5 0 0 1-1 0v-1A.5.5 0 0 1 2 7h5.5V6A1.5 1.5 0 0 1 6 4.5v-1z"/><path d="M1 11.5A1.5 1.5 0 0 1 2.5 10h1A1.5 1.5 0 0 1 5 11.5v1A1.5 1.5 0 0 1 3.5 14h-1A1.5 1.5 0 0 1 1 12.5v-1zm5 0A1.5 1.5 0 0 1 7.5 10h1a1.5 1.5 0 0 1 1.5 1.5v1A1.5 1.5 0 0 1 8.5 14h-1A1.5 1.5 0 0 1 6 12.5v-1zm5 0a1.5 1.5 0 0 1 1.5-1.5h1a1.5 1.5 0 0 1 1.5 1.5v1a1.5 1.5 0 0 1-1.5 1.5h-1a1.5 1.5 0 0 1-1.5-1.5v-1z"/></svg><span class="small fw-semibold text-uppercase">Diagrama SVG · Estructura de Directorios y Archivos</span></span><span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:0.68rem;">SVG</span></div><div class="diagram-svg-body" style="background:#0f172a;padding:1.25rem 1rem;overflow-x:auto;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 224" width="100%" style="max-width:680px;height:auto;" role="img" aria-label="Estructura de archivos: evals/tareas/"><defs><marker id="arrow-sky" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#38bdf8"/></marker><marker id="arrow-emerald" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#34d399"/></marker><marker id="arrow-amber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#fbbf24"/></marker><marker id="arrow-violet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#a78bfa"/></marker><marker id="arrow-slate" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 9 5 L 0 9 z" fill="#94a3b8"/></marker></defs><path d="M 24 32.0 a 1.5 1.5 0 0 1 1.5 -1.5 h 4 l 1.5 2 h 6.5 a 1.5 1.5 0 0 1 1.5 1.5 v 7.5 a 1.5 1.5 0 0 1 -1.5 1.5 h -12 a 1.5 1.5 0 0 1 -1.5 -1.5 z" fill="#38bdf8" fill-opacity="0.22" stroke="#38bdf8" stroke-width="1.3"/><text x="46" y="41.5" fill="#38bdf8" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="700">evals/tareas/</text><rect x="10" y="52" width="660" height="30" rx="4" fill="#1e293b" fill-opacity="0.35"/><line x1="31" y1="52" x2="31" y2="82" stroke="#475569" stroke-width="1.5"/><line x1="31" y1="67.0" x2="44" y2="67.0" stroke="#475569" stroke-width="1.5"/><path d="M 48 62.0 a 1.5 1.5 0 0 1 1.5 -1.5 h 4 l 1.5 2 h 6.5 a 1.5 1.5 0 0 1 1.5 1.5 v 7.5 a 1.5 1.5 0 0 1 -1.5 1.5 h -12 a 1.5 1.5 0 0 1 -1.5 -1.5 z" fill="#38bdf8" fill-opacity="0.22" stroke="#38bdf8" stroke-width="1.3"/><text x="70" y="71.5" fill="#38bdf8" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="700">001-paginacion/</text><line x1="31" y1="82" x2="31" y2="112" stroke="#475569" stroke-width="1.5"/><line x1="55" y1="82" x2="55" y2="112" stroke="#475569" stroke-width="1.5"/><line x1="55" y1="97.0" x2="68" y2="97.0" stroke="#475569" stroke-width="1.5"/><rect x="73" y="90.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="94" y="101.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">prompt.md</text><rect x="280" y="86.5" width="121" height="21" rx="6" fill="#0f172a" stroke="#334155" stroke-width="1"/><text x="290" y="101.0" fill="#94a3b8" font-family="Segoe UI, Roboto, sans-serif" font-size="12">← la petición</text><rect x="10" y="112" width="660" height="30" rx="4" fill="#1e293b" fill-opacity="0.35"/><line x1="31" y1="112" x2="31" y2="142" stroke="#475569" stroke-width="1.5"/><line x1="55" y1="112" x2="55" y2="142" stroke="#475569" stroke-width="1.5"/><line x1="55" y1="127.0" x2="68" y2="127.0" stroke="#475569" stroke-width="1.5"/><rect x="73" y="120.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="94" y="131.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">base_commit.txt</text><rect x="280" y="116.5" width="249" height="21" rx="6" fill="#0f172a" stroke="#334155" stroke-width="1"/><text x="290" y="131.0" fill="#94a3b8" font-family="Segoe UI, Roboto, sans-serif" font-size="12">← commit desde el que se parte</text><line x1="31" y1="142" x2="31" y2="172" stroke="#475569" stroke-width="1.5"/><path d="M 55 142 L 55 157.0 L 68 157.0" fill="none" stroke="#475569" stroke-width="1.5"/><rect x="73" y="150.0" width="12" height="14" rx="2" fill="#94a3b8" fill-opacity="0.18" stroke="#94a3b8" stroke-width="1.2"/><text x="94" y="161.5" fill="#f8fafc" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="500">verificar.sh</text><rect x="280" y="146.5" width="346" height="21" rx="6" fill="#0f172a" stroke="#334155" stroke-width="1"/><text x="290" y="161.0" fill="#94a3b8" font-family="Segoe UI, Roboto, sans-serif" font-size="12">← tests que deben pasar (grader por código)</text><rect x="10" y="172" width="660" height="30" rx="4" fill="#1e293b" fill-opacity="0.35"/><path d="M 31 172 L 31 187.0 L 44 187.0" fill="none" stroke="#475569" stroke-width="1.5"/><path d="M 48 182.0 a 1.5 1.5 0 0 1 1.5 -1.5 h 4 l 1.5 2 h 6.5 a 1.5 1.5 0 0 1 1.5 1.5 v 7.5 a 1.5 1.5 0 0 1 -1.5 1.5 h -12 a 1.5 1.5 0 0 1 -1.5 -1.5 z" fill="#38bdf8" fill-opacity="0.22" stroke="#38bdf8" stroke-width="1.3"/><text x="70" y="191.5" fill="#38bdf8" font-family="Cascadia Mono, Consolas, monospace" font-size="13" font-weight="700">002-export-csv/ ...</text></svg></div><div class="d-none"><pre><code>
+├── 001-paginacion/
+│   ├── prompt.md          ← la petición
+│   ├── base_commit.txt    ← commit desde el que se parte
+│   └── verificar.sh       ← tests que deben pasar (grader por código)
+└── 002-export-csv/ ...
+</code></pre></div></div>
+
+<p>Script de ejecución (esquema):</p>
+<div class="codehilite"><pre><span></span><code><span class="k">for</span><span class="w"> </span>t<span class="w"> </span><span class="k">in</span><span class="w"> </span>evals/tareas/*/<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>git<span class="w"> </span>worktree<span class="w"> </span>add<span class="w"> </span>/tmp/eval-<span class="k">$(</span>basename<span class="w"> </span><span class="nv">$t</span><span class="k">)</span><span class="w"> </span><span class="k">$(</span>cat<span class="w"> </span><span class="nv">$t</span>/base_commit.txt<span class="k">)</span>
+<span class="w">  </span><span class="o">(</span><span class="nb">cd</span><span class="w"> </span>/tmp/eval-<span class="k">$(</span>basename<span class="w"> </span><span class="nv">$t</span><span class="k">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>claude<span class="w"> </span>-p<span class="w"> </span><span class="s2">"</span><span class="k">$(</span>cat<span class="w"> </span><span class="nv">$t</span>/prompt.md<span class="k">)</span><span class="s2">"</span><span class="w"> </span>--permission-mode<span class="w"> </span>acceptEdits<span class="w"> </span>--max-turns<span class="w"> </span><span class="m">40</span><span class="w"> </span><span class="se">\</span>
+<span class="w">       </span>--output-format<span class="w"> </span>json<span class="w"> </span>&gt;<span class="w"> </span>resultado.json<span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">     </span>bash<span class="w"> </span><span class="s2">"</span><span class="nv">$OLDPWD</span><span class="s2">/</span><span class="nv">$t</span><span class="s2">/verificar.sh"</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"PASS </span><span class="nv">$t</span><span class="s2">"</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"FAIL </span><span class="nv">$t</span><span class="s2">"</span><span class="o">)</span>
+<span class="w">  </span>git<span class="w"> </span>worktree<span class="w"> </span>remove<span class="w"> </span>--force<span class="w"> </span>/tmp/eval-<span class="k">$(</span>basename<span class="w"> </span><span class="nv">$t</span><span class="k">)</span>
+<span class="k">done</span>
+</code></pre></div>
+
+<p>Ejecútalo <strong>dentro de un entorno aislado</strong> (09.1). Úsalo para comparar: modelo A vs B, <code>AGENTS.md</code> antes/después, Claude Code vs OpenCode (<code>opencode run</code>).</p>
+<hr />
+<h2 id="8-evals-en-ci">8. Evals en CI</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># .github/workflows/evals.yml</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Evals</span>
+<span class="nt">on</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pull_request</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"AGENTS.md"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">".claude/**"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"mcp/**"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"prompts/**"</span><span class="p p-Indicator">]</span>
+<span class="nt">jobs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">evals</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">astral-sh/setup-uv@v5</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uv run --directory mcp python ../evals/eval_tools.py</span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> ANTHROPIC_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">"${{</span><span class="nv"> </span><span class="s">secrets.ANTHROPIC_API_KEY</span><span class="nv"> </span><span class="s">}}"</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">npx promptfoo@latest eval --no-progress-bar</span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> ANTHROPIC_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="s">"${{</span><span class="nv"> </span><span class="s">secrets.ANTHROPIC_API_KEY</span><span class="nv"> </span><span class="s">}}"</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</code></pre></div>
+
+<p>Define un <strong>umbral</strong> (p. ej. exactitud de tools ≥ 90%) y haz fallar el job si baja.</p>
+<hr />
+<h2 id="9-observabilidad-de-claude-code-con-opentelemetry">9. Observabilidad de Claude Code con OpenTelemetry</h2>
+<p>Claude Code exporta <strong>métricas</strong> y <strong>eventos</strong> (logs) por OpenTelemetry.</p>
+<h3 id="91-activar">9.1 Activar</h3>
+<div class="codehilite"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">CLAUDE_CODE_ENABLE_TELEMETRY</span><span class="o">=</span><span class="m">1</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_METRICS_EXPORTER</span><span class="o">=</span>otlp<span class="w">          </span><span class="c1"># otlp | prometheus | console | none</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_LOGS_EXPORTER</span><span class="o">=</span>otlp<span class="w">             </span><span class="c1"># otlp | console | none</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_PROTOCOL</span><span class="o">=</span>grpc
+<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span>http://localhost:4317
+<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_METRIC_EXPORT_INTERVAL</span><span class="o">=</span><span class="m">10000</span><span class="w">   </span><span class="c1"># para pruebas (por defecto 60000 ms)</span>
+claude
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c"># PowerShell</span>
+<span class="nv">$env:CLAUDE_CODE_ENABLE_TELEMETRY</span><span class="p">=</span><span class="s2">"1"</span><span class="p">;</span> <span class="nv">$env:OTEL_METRICS_EXPORTER</span><span class="p">=</span><span class="s2">"otlp"</span><span class="p">;</span> <span class="nv">$env:OTEL_LOGS_EXPORTER</span><span class="p">=</span><span class="s2">"otlp"</span>
+<span class="nv">$env:OTEL_EXPORTER_OTLP_PROTOCOL</span><span class="p">=</span><span class="s2">"grpc"</span><span class="p">;</span> <span class="nv">$env:OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="p">=</span><span class="s2">"http://localhost:4317"</span>
+<span class="n">claude</span>
+</code></pre></div>
+
+<ul>
+<li>Para probar rápido sin backend: <code>OTEL_METRICS_EXPORTER=console</code>.</li>
+<li>El contenido de prompts y de herramientas <strong>no</strong> se registra por defecto (<code>OTEL_LOG_USER_PROMPTS</code>, <code>OTEL_LOG_TOOL_DETAILS</code> lo activan; cuidado con la privacidad).</li>
+<li>Los <code>.claude/settings.json</code> del repositorio <strong>no</strong> pueden fijar los exportadores: usa el shell, <code>~/.claude/settings.json</code> o managed settings.</li>
+</ul>
+<h3 id="92-que-obtienes">9.2 Qué obtienes</h3>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>claude_code.session.count</code></td>
+<td>Sesiones iniciadas</td>
+</tr>
+<tr>
+<td><code>claude_code.token.usage</code></td>
+<td>Tokens usados</td>
+</tr>
+<tr>
+<td><code>claude_code.cost.usage</code></td>
+<td>Coste (USD)</td>
+</tr>
+<tr>
+<td><code>claude_code.lines_of_code.count</code></td>
+<td>Líneas modificadas</td>
+</tr>
+<tr>
+<td><code>claude_code.commit.count</code>, <code>claude_code.pull_request.count</code></td>
+<td>Commits y PRs creados</td>
+</tr>
+<tr>
+<td><code>claude_code.code_edit_tool.decision</code></td>
+<td>Decisiones de permiso en ediciones</td>
+</tr>
+<tr>
+<td><code>claude_code.active_time.total</code></td>
+<td>Tiempo activo</td>
+</tr>
+</tbody>
+</table></div>
+<p>Eventos: <code>claude_code.user_prompt</code>, <code>claude_code.tool_result</code>, <code>claude_code.tool_decision</code>, <code>claude_code.api_request</code>, <code>claude_code.api_error</code>…</p>
+<h3 id="93-stack-local-minimo-docker-compose">9.3 Stack local mínimo (Docker Compose)</h3>
+<p><code>observabilidad/docker-compose.yml</code></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">otel-collector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel/opentelemetry-collector-contrib:latest</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"--config=/etc/otel/config.yaml"</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"./otel-config.yaml:/etc/otel/config.yaml"</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"4317:4317"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"8889:8889"</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prom/prometheus:latest</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"./prometheus.yml:/etc/prometheus/prometheus.yml"</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"9090:9090"</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">grafana</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/grafana:latest</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"3000:3000"</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p><code>observabilidad/otel-config.yaml</code></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">receivers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">otlp</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">protocols</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">grpc</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.0.0:4317</span>
+<span class="nt">exporters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">prometheus</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">endpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0.0.0:8889</span>
+<span class="w">  </span><span class="nt">debug</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">verbosity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">basic</span>
+<span class="nt">service</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pipelines</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metrics</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> receivers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">otlp</span><span class="p p-Indicator">],</span><span class="nt"> exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">prometheus</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">logs</span><span class="p">:</span><span class="w">    </span><span class="p p-Indicator">{</span><span class="nt"> receivers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">otlp</span><span class="p p-Indicator">],</span><span class="nt"> exporters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">debug</span><span class="p p-Indicator">]</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</code></pre></div>
+
+<p><code>observabilidad/prometheus.yml</code></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">scrape_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">otel</span>
+<span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"otel-collector:8889"</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>observabilidad/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d
+<span class="c1"># Grafana en http://localhost:3000 → añade Prometheus (http://prometheus:9090) como data source</span>
+</code></pre></div>
+
+<p>Alternativas gestionadas/open source con soporte OTLP: <strong>Langfuse</strong> (incluye guías para trazar agentes de código), <strong>Arize Phoenix</strong>, Datadog, Honeycomb, Grafana Cloud.</p>
+<h3 id="94-consumo-sin-infraestructura">9.4 Consumo sin infraestructura</h3>
+<ul>
+<li>Claude Code: <code>/usage</code> (o <code>/cost</code>) y <code>/context</code> en la sesión.</li>
+<li>OpenCode: consulta su documentación de la versión 2 sobre estadísticas y uso; además, la mayoría de proveedores ofrece paneles de consumo.</li>
+</ul>
+<hr />
+<h2 id="10-trazas-de-tu-propio-agente">10. Trazas de tu propio agente</h2>
+<p>Para el agente de <a href="../05-mcp/05-mcp-clientes-python-node-csharp.html">05.5</a>, instrumenta con OpenTelemetry: un <em>span</em> por iteración del loop y por cada tool call.</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span>opentelemetry-sdk<span class="w"> </span>opentelemetry-exporter-otlp
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">Resource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace</span><span class="w"> </span><span class="kn">import</span> <span class="n">TracerProvider</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.sdk.trace.export</span><span class="w"> </span><span class="kn">import</span> <span class="n">BatchSpanProcessor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry.exporter.otlp.proto.grpc.trace_exporter</span><span class="w"> </span><span class="kn">import</span> <span class="n">OTLPSpanExporter</span>
+
+<span class="n">proveedor</span> <span class="o">=</span> <span class="n">TracerProvider</span><span class="p">(</span><span class="n">resource</span><span class="o">=</span><span class="n">Resource</span><span class="o">.</span><span class="n">create</span><span class="p">({</span><span class="s2">"service.name"</span><span class="p">:</span> <span class="s2">"agente-tareas"</span><span class="p">}))</span>
+<span class="n">proveedor</span><span class="o">.</span><span class="n">add_span_processor</span><span class="p">(</span><span class="n">BatchSpanProcessor</span><span class="p">(</span><span class="n">OTLPSpanExporter</span><span class="p">(</span><span class="n">endpoint</span><span class="o">=</span><span class="s2">"http://localhost:4317"</span><span class="p">,</span> <span class="n">insecure</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
+<span class="n">trace</span><span class="o">.</span><span class="n">set_tracer_provider</span><span class="p">(</span><span class="n">proveedor</span><span class="p">)</span>
+<span class="n">tracer</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">get_tracer</span><span class="p">(</span><span class="s2">"agente"</span><span class="p">)</span>
+
+<span class="c1"># Dentro del loop del agente:</span>
+<span class="k">with</span> <span class="n">tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span><span class="s2">"llm.call"</span><span class="p">)</span> <span class="k">as</span> <span class="n">span</span><span class="p">:</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">messages</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">"gen_ai.request.model"</span><span class="p">,</span> <span class="n">MODELO</span><span class="p">)</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">"gen_ai.usage.input_tokens"</span><span class="p">,</span> <span class="n">resp</span><span class="o">.</span><span class="n">usage</span><span class="o">.</span><span class="n">input_tokens</span><span class="p">)</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">"gen_ai.usage.output_tokens"</span><span class="p">,</span> <span class="n">resp</span><span class="o">.</span><span class="n">usage</span><span class="o">.</span><span class="n">output_tokens</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">tracer</span><span class="o">.</span><span class="n">start_as_current_span</span><span class="p">(</span><span class="s2">"tool.call"</span><span class="p">)</span> <span class="k">as</span> <span class="n">span</span><span class="p">:</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">"tool.name"</span><span class="p">,</span> <span class="n">bloque</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="k">await</span> <span class="n">mcp</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="n">bloque</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">bloque</span><span class="o">.</span><span class="n">input</span><span class="p">)</span>
+    <span class="n">span</span><span class="o">.</span><span class="n">set_attribute</span><span class="p">(</span><span class="s2">"tool.is_error"</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">is_error</span><span class="p">))</span>
+</code></pre></div>
+
+<blockquote class="blockquote doc-blockquote shadow-sm my-3">
+<p>Usa las convenciones semánticas de OpenTelemetry para IA generativa (atributos <code>gen_ai.*</code>) para que las herramientas de observabilidad entiendan tus trazas. Añade el collector una ruta <code>traces</code> hacia Jaeger, Langfuse o Phoenix.</p>
+</blockquote>
+<hr />
+<h2 id="11-que-vigilar-kpis-de-un-equipo-agentico">11. Qué vigilar (KPIs de un equipo agéntico)</h2>
+<div class="table-responsive shadow-sm rounded-3 my-4"><table class="table table-hover table-striped table-bordered align-middle mb-0">
+<thead>
+<tr>
+<th>KPI</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Coste por tarea / por desarrollador</td>
+<td>Presupuesto y elección de modelo</td>
+</tr>
+<tr>
+<td>% de PRs de agente aceptados sin cambios grandes</td>
+<td>Calidad real</td>
+</tr>
+<tr>
+<td>Tasa de retrabajo (reverts, bugs posteriores)</td>
+<td>Calidad a largo plazo</td>
+</tr>
+<tr>
+<td>Tiempo hasta PR</td>
+<td>Productividad</td>
+</tr>
+<tr>
+<td>Denegaciones de permisos / bloqueos de hooks</td>
+<td>Riesgo y fricción</td>
+</tr>
+<tr>
+<td>Exactitud de evals de tools/skills</td>
+<td>Salud de tu configuración</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="errores-comunes">Errores comunes</h2>
+<ul>
+<li>Evaluar con 3 ejemplos "a ojo".</li>
+<li>Un solo intento por caso (el no determinismo engaña).</li>
+<li>LLM-as-judge sin calibrar con revisiones humanas.</li>
+<li>Registrar prompts completos con datos sensibles en la telemetría.</li>
+<li>Medir solo velocidad y no retrabajo.</li>
+</ul>
+<h2 id="ejercicios">Ejercicios</h2>
+<ol>
+<li>Crea la eval de selección de tools (sección 4) con 15 casos. Empeora a propósito una descripción y observa la caída; luego mejórala.</li>
+<li>✅ Éxito: puedes demostrar con números qué descripción es mejor.</li>
+<li>Evalúa tu subagente <code>code-reviewer</code> con promptfoo usando 5 diffs con bugs sembrados y 2 limpios. Compara dos modelos.</li>
+<li>Levanta el stack de observabilidad y visualiza <code>claude_code.token.usage</code> y <code>claude_code.cost.usage</code> de una sesión.</li>
+<li>Instrumenta tu agente propio con spans y visualiza una traza completa.</li>
+<li>Añade un workflow de evals que falle si la exactitud baja del 90%.</li>
+</ol>
+<h2 id="checklist">Checklist</h2>
+<ul>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Diferencio evals offline y observabilidad online.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Tengo un dataset y graders para al menos una tool, skill o subagente.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Ejecuto evals en CI con umbral.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Exporto métricas de Claude Code con OpenTelemetry.</li>
+<li class="task-list-item"><input type="checkbox" class="form-check-input me-2" disabled aria-label="Pendiente">Trazo mi propio agente.</li>
+</ul>
+<hr />
+<p>⬅️ <a href="01-aislamiento-sandbox-devcontainers-docker.html">09.1</a> · ➡️ <a href="03-rag-y-memoria-persistente.html">09.3 · RAG y memoria persistente</a></p>
+      </article>
+
+      <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+        <a href="01-aislamiento-sandbox-devcontainers-docker.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>&larr; 09.1 · Aislamiento serio: sandbox, Dev Containers y Docker Sandboxes</span></a>
+<a href="03-rag-y-memoria-persistente.html" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 shadow-sm"><span>09.3 · Patrones RAG y memoria persistente &rarr;</span></a>
+      </div>
+
+      <footer class="text-center text-muted small mt-5 pt-3 border-top">
+        Sitio de documentación generado automáticamente &middot; Bootstrap 5 &middot; Cero pérdida de contenido
+      </footer>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // 1. Botón Toggle para ocultar/mostrar la barra lateral
+      const toggleBtn = document.getElementById('sidebarToggle');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function () {
+          document.body.classList.toggle('sidebar-collapsed');
+        });
+      }
+
+      // 2. Detectar URL actual dinámicamente y aplicar clase .active al enlace correspondiente
+      const currentPath = decodeURIComponent(window.location.pathname).replace(/\\/g, '/').toLowerCase();
+      const sidebarLinks = document.querySelectorAll('#sidebarNav a.sidebar-link');
+      let matchedLink = null;
+
+      sidebarLinks.forEach(function (link) {
+        try {
+          const resolved = new URL(link.getAttribute('href'), window.location.href);
+          const linkPath = decodeURIComponent(resolved.pathname).replace(/\\/g, '/').toLowerCase();
+          if (currentPath && linkPath === currentPath) {
+            matchedLink = link;
+          }
+        } catch (e) {}
+      });
+
+      if (matchedLink) {
+        sidebarLinks.forEach(function (l) { l.classList.remove('active'); });
+        matchedLink.classList.add('active');
+        matchedLink.setAttribute('aria-current', 'page');
+        const parentCollapse = matchedLink.closest('.collapse');
+        if (parentCollapse && !parentCollapse.classList.contains('show')) {
+          parentCollapse.classList.add('show');
+        }
+        matchedLink.scrollIntoView({ block: 'nearest' });
+      } else {
+        const presetActive = document.querySelector('#sidebarNav a.sidebar-link.active');
+        if (presetActive) {
+          presetActive.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      // 3. Filtro rápido en barra lateral
+      const filterInput = document.getElementById('sidebarFilter');
+      if (filterInput) {
+        filterInput.addEventListener('input', function () {
+          const query = this.value.trim().toLowerCase();
+          const groups = document.querySelectorAll('.sidebar-group');
+          groups.forEach(function (group) {
+            const items = group.querySelectorAll('.nav-item');
+            let visibleCount = 0;
+            items.forEach(function (item) {
+              const text = item.textContent.toLowerCase();
+              const match = !query || text.includes(query);
+              item.style.display = match ? '' : 'none';
+              if (match) visibleCount++;
+            });
+            group.style.display = visibleCount > 0 ? '' : 'none';
+            if (query && visibleCount > 0) {
+              const collapseEl = group.querySelector('.collapse');
+              if (collapseEl) collapseEl.classList.add('show');
+            }
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

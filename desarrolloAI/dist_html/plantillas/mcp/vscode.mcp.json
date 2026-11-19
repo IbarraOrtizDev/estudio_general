@@ -1,0 +1,22 @@
+{
+  "inputs": [
+    { "type": "promptString", "id": "github-token", "description": "GitHub token", "password": true }
+  ],
+  "servers": {
+    "tareas": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["run", "--directory", "${workspaceFolder}/mcp", "server.py"]
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--isolated"]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": { "Authorization": "Bearer ${input:github-token}" }
+    }
+  }
+}
